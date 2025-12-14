@@ -1,0 +1,46 @@
+:root {
+  --color-deep-purple: #1a1a2e;
+  --color-dark-purple: #2d1b4e;
+  --color-teal: #4ade80;
+  --color-pink: #ec4899;
+  --color-bg: #0a0a12;
+  --color-text: #d0d0e0;
+  --color-text-muted: #a0a0b0;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--color-teal);
+  color: var(--color-deep-purple);
+}
