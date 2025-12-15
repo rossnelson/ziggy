@@ -1,0 +1,147 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  dev:
+    desc: Start all development services
+    dir: bin/serve
+    cmds:
+      - chmod +x *.sh
+      - goreman start
+
+  dev:web:
+    desc: Start only the web dev server
+    dir: web
+    cmds:
+      - npm run dev
+
+  dev:temporal:
+    desc: Start only the Temporal dev server
+    cmds:
+      - temporal server start-dev --namespace default --db-filename /tmp/ziggy-temporal.db --ui-port 8233
+
+  dev:worker:
+    desc: Start only the worker (requires Temporal)
+    dir: worker
+    cmds:
+      - air -c .air.toml
+
+  dev:api:
+    desc: Start only the API server (requires Temporal)
+    dir: worker
+    cmds:
+      - air -c .air.api.toml
+
+  build:
+    desc: Build all components
+    cmds:
+      - task: build:web
+      - task: build:worker
+
+  build:web:
+    desc: Build the web UI
+    dir: web
+    cmds:
+      - npm run build
+
+  build:worker:
+    desc: Build the Go worker
+    dir: worker
+    cmds:
+      - go build -o ziggy .
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:web
+      - task: test:worker
+
+  test:web:
+    desc: Run web tests
+    dir: web
+    cmds:
+      - npm run check
+
+  test:worker:
+    desc: Run worker tests
+    dir: worker
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: Run all linters
+    cmds:
+      - task: lint:web
+      - task: lint:worker
+
+  lint:web:
+    desc: Lint web code
+    dir: web
+    cmds:
+      - npm run lint
+      - npm run format:check
+
+  lint:worker:
+    desc: Lint worker code
+    dir: worker
+    cmds:
+      - go vet ./...
+
+  format:
+    desc: Format all code
+    cmds:
+      - task: format:web
+      - task: format:worker
+
+  format:web:
+    desc: Format web code
+    dir: web
+    cmds:
+      - npm run format
+
+  format:worker:
+    desc: Format worker code
+    dir: worker
+    cmds:
+      - go fmt ./...
+
+  setup:
+    desc: Initial setup after cloning
+    cmds:
+      - echo "🔧 Setting up development environment..."
+      - task: setup:deps
+      - echo "✅ Setup complete!"
+
+  setup:deps:
+    desc: Install all dependencies
+    cmds:
+      - echo "📦 Installing web dependencies..."
+      - cd web && npm install
+      - echo "📦 Installing Go dependencies..."
+      - cd worker && go mod tidy
+      - echo "📦 Checking for required tools..."
+      - |
+        if ! command -v goreman >/dev/null 2>&1; then
+          echo "Installing goreman..."
+          go install github.com/mattn/goreman@latest
+        fi
+      - |
+        if ! command -v air >/dev/null 2>&1; then
+          echo "Installing air..."
+          go install github.com/air-verse/air@latest
+        fi
+      - |
+        if ! command -v temporal >/dev/null 2>&1; then
+          echo "⚠️  Temporal CLI not found. Install from: https://docs.temporal.io/cli"
+        fi
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf web/dist
+      - rm -rf worker/tmp
+      - rm -f worker/ziggy

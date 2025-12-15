@@ -1,0 +1,4 @@
+temporal: ./temporal.sh
+worker: ./worker.sh
+api: ./api.sh
+web: ./web.sh
