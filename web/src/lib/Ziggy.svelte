@@ -10,7 +10,7 @@
 
   const SPRITE_WIDTH = 64;
   const SPRITE_HEIGHT = 64;
-  const COLS = 3;
+  const _COLS = 3; // Available for future use
 
   const moodToSprite: Record<Mood, { col: number; row: number }> = {
     happy: { col: 0, row: 0 },
@@ -39,18 +39,18 @@
   let pos = $derived(sprite());
 
   let animationClass = $derived(
-    mood === 'happy' ? 'bounce' :
-    mood === 'sleeping' ? 'sleep' :
-    mood === 'sad' || mood === 'hungry' || mood === 'lonely' ? 'droop' :
-    mood === 'tun' ? 'curled' :
-    'idle'
+    mood === 'happy'
+      ? 'bounce'
+      : mood === 'sleeping'
+        ? 'sleep'
+        : mood === 'sad' || mood === 'hungry' || mood === 'lonely'
+          ? 'droop'
+          : mood === 'tun'
+            ? 'curled'
+            : 'idle'
   );
 
-  let scale = $derived(
-    stage === 'egg' ? 0.9 :
-    stage === 'baby' ? 0.85 :
-    1
-  );
+  let scale = $derived(stage === 'egg' ? 0.9 : stage === 'baby' ? 0.85 : 1);
 </script>
 
 <div
@@ -82,8 +82,13 @@
   }
 
   @keyframes bounce {
-    0%, 100% { transform: scale(var(--scale, 1)) translateY(0); }
-    50% { transform: scale(var(--scale, 1)) translateY(-5px); }
+    0%,
+    100% {
+      transform: scale(var(--scale, 1)) translateY(0);
+    }
+    50% {
+      transform: scale(var(--scale, 1)) translateY(-5px);
+    }
   }
 
   .sleep {
@@ -91,8 +96,13 @@
   }
 
   @keyframes sleep-bob {
-    0%, 100% { transform: scale(var(--scale, 1)) rotate(0deg); }
-    50% { transform: scale(var(--scale, 1)) rotate(2deg); }
+    0%,
+    100% {
+      transform: scale(var(--scale, 1)) rotate(0deg);
+    }
+    50% {
+      transform: scale(var(--scale, 1)) rotate(2deg);
+    }
   }
 
   .droop {
@@ -100,8 +110,13 @@
   }
 
   @keyframes droop {
-    0%, 100% { transform: scale(var(--scale, 1)) translateY(0); }
-    50% { transform: scale(var(--scale, 1)) translateY(3px); }
+    0%,
+    100% {
+      transform: scale(var(--scale, 1)) translateY(0);
+    }
+    50% {
+      transform: scale(var(--scale, 1)) translateY(3px);
+    }
   }
 
   .curled {
@@ -113,8 +128,15 @@
   }
 
   @keyframes idle-sway {
-    0%, 100% { transform: scale(var(--scale, 1)) rotate(0deg); }
-    25% { transform: scale(var(--scale, 1)) rotate(-1deg); }
-    75% { transform: scale(var(--scale, 1)) rotate(1deg); }
+    0%,
+    100% {
+      transform: scale(var(--scale, 1)) rotate(0deg);
+    }
+    25% {
+      transform: scale(var(--scale, 1)) rotate(-1deg);
+    }
+    75% {
+      transform: scale(var(--scale, 1)) rotate(1deg);
+    }
   }
 </style>

@@ -35,7 +35,7 @@
 </script>
 
 <div class="devtools" class:open={isOpen}>
-  <button class="toggle" onclick={() => isOpen = !isOpen}>
+  <button class="toggle" onclick={() => (isOpen = !isOpen)}>
     {isOpen ? '✕' : '⚙'}
   </button>
 
@@ -210,7 +210,7 @@
     align-items: center;
   }
 
-  input[type="range"] {
+  input[type='range'] {
     width: 100%;
     height: 6px;
     -webkit-appearance: none;
@@ -220,7 +220,7 @@
     outline: none;
   }
 
-  input[type="range"]::-webkit-slider-thumb {
+  input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
@@ -239,7 +239,7 @@
     font-size: 11px;
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     accent-color: #4ade80;
   }
 

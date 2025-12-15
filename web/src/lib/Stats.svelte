@@ -69,7 +69,9 @@
   .bar-fill {
     height: 100%;
     border-radius: 4px;
-    transition: width 0.3s ease, background 0.3s;
+    transition:
+      width 0.3s ease,
+      background 0.3s;
   }
 
   .bar-fill.low {
@@ -81,13 +83,23 @@
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   @keyframes pulse-fast {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 
   .value {

@@ -107,11 +107,7 @@
     {/if}
   </button>
 
-  <button
-    class="action-btn play"
-    onclick={handlePlay}
-    disabled={playCooldown > 0 || isSleeping}
-  >
+  <button class="action-btn play" onclick={handlePlay} disabled={playCooldown > 0 || isSleeping}>
     <span class="icon">⚽</span>
     <span class="label">Play</span>
     <span class="shortcut">P</span>
@@ -122,11 +118,7 @@
     {/if}
   </button>
 
-  <button
-    class="action-btn pet"
-    onclick={handlePet}
-    disabled={petCooldown > 0 || isSleeping}
-  >
+  <button class="action-btn pet" onclick={handlePet} disabled={petCooldown > 0 || isSleeping}>
     <span class="icon">✋</span>
     <span class="label">Pet</span>
     <span class="shortcut">T</span>

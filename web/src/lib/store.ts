@@ -1,7 +1,15 @@
 import { writable, derived, get } from 'svelte/store';
 
 export type Stage = 'egg' | 'baby' | 'teen' | 'adult' | 'elder';
-export type Mood = 'happy' | 'neutral' | 'hungry' | 'sad' | 'lonely' | 'sleeping' | 'critical' | 'tun';
+export type Mood =
+  | 'happy'
+  | 'neutral'
+  | 'hungry'
+  | 'sad'
+  | 'lonely'
+  | 'sleeping'
+  | 'critical'
+  | 'tun';
 export type TimeOfDay = 'night' | 'dawn' | 'day' | 'dusk';
 export type Action = 'feed' | 'play' | 'pet';
 
@@ -51,9 +59,10 @@ const initialState: ZiggyState = {
   stage: 'adult',
   timeOfDay: getInitialTimeOfDay(),
   sleeping: getInitialTimeOfDay() === 'night',
-  message: getInitialTimeOfDay() === 'night'
-    ? "Zzz... cosmic\ndreams... zzz"
-    : "I've survived\nworse than this.\nBut barely.",
+  message:
+    getInitialTimeOfDay() === 'night'
+      ? 'Zzz... cosmic\ndreams... zzz'
+      : "I've survived\nworse than this.\nBut barely.",
   lastAction: null,
   lastActionTime: null,
   age: 0,
@@ -78,7 +87,7 @@ function updateTimeOfDay() {
   const newTimeOfDay = getTimeOfDayFromHour(hour);
   const shouldSleep = newTimeOfDay === 'night';
 
-  ziggyState.update(state => {
+  ziggyState.update((state) => {
     if (state.timeOfDay === newTimeOfDay && state.sleeping === shouldSleep) {
       return state;
     }
@@ -107,7 +116,7 @@ export function startDecay() {
   decayTimer = setInterval(() => {
     tickCount++;
     updateTimeOfDay();
-    ziggyState.update(state => {
+    ziggyState.update((state) => {
       if (state.sleeping) {
         // During sleep: slow fullness decay, slow happiness recovery
         const newFullness = Math.max(0, state.fullness - DECAY_AMOUNTS.fullness * 0.5);
@@ -192,103 +201,59 @@ export const mood = derived(ziggyState, ($state): Mood => {
 const MESSAGES: Record<string, Record<string, string[]>> = {
   feed: {
     success: [
-      "Mmm, perfect.\nI can survive\nanother eon.",
-      "Delicious.\nAlmost as good\nas cosmic dust.",
-      "I needed that.\nThanks, human.",
+      'Mmm, perfect.\nI can survive\nanother eon.',
+      'Delicious.\nAlmost as good\nas cosmic dust.',
+      'I needed that.\nThanks, human.',
     ],
     full: [
-      "Too full!\nNow I feel sick.\n*happiness down*",
-      "Ugh... stuffed.\nThat made me\nunhappy.",
-      "No more!\nOverfeeding\nhurts me.",
+      'Too full!\nNow I feel sick.\n*happiness down*',
+      'Ugh... stuffed.\nThat made me\nunhappy.',
+      'No more!\nOverfeeding\nhurts me.',
     ],
     hungry: [
-      "FINALLY.\nI was mass-\nextinction hungry.",
+      'FINALLY.\nI was mass-\nextinction hungry.',
       "Oh thank you.\nI thought I'd\nstarve forever.",
-      "Food! Beautiful\nlife-giving food!",
+      'Food! Beautiful\nlife-giving food!',
     ],
-    sleeping: [
-      "Zzz... not now...\nzzz...",
-      "*mumbles*\nfive more eons...",
-    ],
+    sleeping: ['Zzz... not now...\nzzz...', '*mumbles*\nfive more eons...'],
   },
   play: {
     success: [
-      "Wheee!\nThis is fun!",
-      "Again! Again!\nI have energy\nfor eons!",
-      "Playing is the\nbest survival\nstrategy.",
+      'Wheee!\nThis is fun!',
+      'Again! Again!\nI have energy\nfor eons!',
+      'Playing is the\nbest survival\nstrategy.',
     ],
-    tired: [
-      "I'm too tired...\nmaybe later?",
-      "Need food first.\nThen play.",
-    ],
-    happy: [
-      "More playing!\nI love this!",
-      "Best day since\nthe Permian\nextinction!",
-    ],
-    sleeping: [
-      "Zzz... playing\nin my dreams...",
-      "*sleep-wiggles*",
-    ],
+    tired: ["I'm too tired...\nmaybe later?", 'Need food first.\nThen play.'],
+    happy: ['More playing!\nI love this!', 'Best day since\nthe Permian\nextinction!'],
+    sleeping: ['Zzz... playing\nin my dreams...', '*sleep-wiggles*'],
   },
   pet: {
-    success: [
-      "*happy wiggle*\nI like you.",
-      "That's nice.\nKeep going.",
-      "Mmm...\nright there.",
-    ],
+    success: ['*happy wiggle*\nI like you.', "That's nice.\nKeep going.", 'Mmm...\nright there.'],
     maxBond: [
       "We're already\nbest friends!\nBut okay...",
-      "*content sigh*\nI trust you\ncompletely.",
+      '*content sigh*\nI trust you\ncompletely.',
     ],
-    low_mood: [
-      "Thanks...\nI needed that.",
-      "*small wiggle*\nYou're kind.",
-    ],
-    sleeping: [
-      "Zzz...\n*happy mumble*",
-      "*snuggles closer*",
-    ],
+    low_mood: ['Thanks...\nI needed that.', "*small wiggle*\nYou're kind."],
+    sleeping: ['Zzz...\n*happy mumble*', '*snuggles closer*'],
   },
   idle: {
     happy: [
       "Life is good.\nI've survived\nworse.",
-      "Did you know\nI can live in\nspace? Cool, right?",
-      "Just vibing.\nDurably.",
+      'Did you know\nI can live in\nspace? Cool, right?',
+      'Just vibing.\nDurably.',
     ],
-    neutral: [
-      "...",
-      "I'm fine.\nJust existing.",
-      "Waiting for\nsomething to\nsurvive.",
-    ],
-    hungry: [
-      "My stomach\nis a void.",
-      "Feed me?\nPlease?",
-      "I'm withering\naway here...",
-    ],
-    sad: [
-      "Nobody loves\na tardigrade...",
-      "*sad wiggle*",
-      "I'm fine.\nEverything is\nfine.",
-    ],
+    neutral: ['...', "I'm fine.\nJust existing.", 'Waiting for\nsomething to\nsurvive.'],
+    hungry: ['My stomach\nis a void.', 'Feed me?\nPlease?', "I'm withering\naway here..."],
+    sad: ['Nobody loves\na tardigrade...', '*sad wiggle*', "I'm fine.\nEverything is\nfine."],
     lonely: [
-      "Is anyone\nthere...?",
-      "I miss you.\nCome back soon.",
-      "*looks around*\nSo quiet...",
-      "Even tardigrades\nneed friends.",
+      'Is anyone\nthere...?',
+      'I miss you.\nCome back soon.',
+      '*looks around*\nSo quiet...',
+      'Even tardigrades\nneed friends.',
     ],
-    critical: [
-      "I don't feel\nso good...",
-      "Help...",
-      "Is this how\nit ends?",
-    ],
-    tun: [
-      "*curled up*\n*not responding*",
-    ],
-    sleeping: [
-      "Zzz...",
-      "*peaceful snoring*",
-      "Zzz... cosmic\ndreams... zzz",
-    ],
+    critical: ["I don't feel\nso good...", 'Help...', 'Is this how\nit ends?'],
+    tun: ['*curled up*\n*not responding*'],
+    sleeping: ['Zzz...', '*peaceful snoring*', 'Zzz... cosmic\ndreams... zzz'],
   },
 };
 
@@ -317,7 +282,8 @@ function getMessage(action: Action, state: ZiggyState, currentMood: Mood): strin
 
   if (action === 'pet') {
     if (state.bond > 90) return pickRandom(actionMessages.maxBond);
-    if (currentMood === 'sad' || currentMood === 'hungry') return pickRandom(actionMessages.low_mood);
+    if (currentMood === 'sad' || currentMood === 'hungry')
+      return pickRandom(actionMessages.low_mood);
     return pickRandom(actionMessages.success);
   }
 
@@ -332,7 +298,7 @@ function isOnCooldown(action: Action): boolean {
 }
 
 function setCooldown(action: Action) {
-  cooldowns.update(cd => ({ ...cd, [action]: Date.now() }));
+  cooldowns.update((cd) => ({ ...cd, [action]: Date.now() }));
 }
 
 export function getCooldownRemaining(action: Action): number {
@@ -355,7 +321,7 @@ export function feed(): boolean {
   const fullnessGain = wasOverfed ? 5 : 25;
   const happinessChange = wasOverfed ? Math.floor(-15 + bondProtection) : 5;
 
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     fullness: Math.min(100, s.fullness + fullnessGain),
     happiness: Math.max(0, Math.min(100, s.happiness + happinessChange)),
@@ -379,7 +345,7 @@ export function play(): boolean {
   const happinessGain = tooTired ? 5 : 20;
   const fullnessCost = tooTired ? 5 : 10;
 
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     happiness: Math.min(100, s.happiness + happinessGain),
     fullness: Math.max(0, s.fullness - fullnessCost),
@@ -400,7 +366,7 @@ export function pet(): boolean {
 
   const currentMood = get(mood);
 
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     bond: Math.min(100, s.bond + 10),
     happiness: Math.min(100, s.happiness + 5),
@@ -415,32 +381,32 @@ export function pet(): boolean {
 
 export function setTimeOfDay(time: TimeOfDay) {
   const shouldSleep = time === 'night';
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     timeOfDay: time,
     sleeping: shouldSleep,
     message: shouldSleep
       ? pickRandom(MESSAGES.idle.sleeping)
-      : "Good morning!\nI dreamed of\nsurviving things.",
+      : 'Good morning!\nI dreamed of\nsurviving things.',
   }));
 }
 
 export function setSleeping(sleeping: boolean) {
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     sleeping,
     message: sleeping
       ? pickRandom(MESSAGES.idle.sleeping)
-      : "Good morning!\nI dreamed of\nsurviving things.",
+      : 'Good morning!\nI dreamed of\nsurviving things.',
   }));
 }
 
 export function setStage(stage: Stage) {
-  ziggyState.update(s => ({ ...s, stage }));
+  ziggyState.update((s) => ({ ...s, stage }));
 }
 
 export function setStat(stat: 'fullness' | 'happiness' | 'bond' | 'hp', value: number) {
-  ziggyState.update(s => {
+  ziggyState.update((s) => {
     const newState = { ...s, [stat]: Math.max(0, Math.min(100, value)) };
     const newMood = getMoodFromState(newState);
     const idleMessages = MESSAGES.idle[newMood] ?? MESSAGES.idle.neutral;
@@ -453,11 +419,11 @@ export function wake(): boolean {
   const state = get(ziggyState);
   if (!state.sleeping) return false;
 
-  ziggyState.update(s => ({
+  ziggyState.update((s) => ({
     ...s,
     sleeping: false,
     happiness: Math.max(0, s.happiness - 10),
-    message: "*yawn*\nI was having\nsuch a nice dream...",
+    message: '*yawn*\nI was having\nsuch a nice dream...',
   }));
   return true;
 }

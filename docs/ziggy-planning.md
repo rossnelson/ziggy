@@ -1,6 +1,6 @@
 # Ziggy: Temporal Tamagotchi
 
-A virtual pet game that runs as a Temporal workflow, demonstrating durable execution concepts through gameplay. Each team member gets a physical device (Raspberry Pi) with their own Ziggy to care for.
+A virtual pet game that runs as a Temporal workflow, demonstrating durable execution concepts through gameplay. Each team member gets a physical device (Raspberry Pi Zero) with their own Ziggy to care for.
 
 ## Project Overview
 
@@ -8,83 +8,115 @@ A virtual pet game that runs as a Temporal workflow, demonstrating durable execu
 
 Ziggy is Temporal's tardigrade mascot. Tardigrades are famously indestructible—surviving radiation, vacuum, and extreme temperatures. This maps perfectly to Temporal's value proposition of durability and resilience. The humor: a creature that survives literal space vacuum somehow depends on your care to stay happy.
 
+### The Pitch
+
+> "Unplug your Pi. Smash it. Ziggy's workflow keeps running in Temporal Cloud. Get a new device, reconnect, Ziggy's still there—still hungry. That's durable execution."
+
 ### Goals
 
 1. **Educational**: Demonstrate Temporal patterns (workflows, signals, queries, schedules, continue-as-new) through tangible gameplay
 2. **Team engagement**: Fun desk toy that showcases the product
 3. **Demo value**: Physical device that can be shown at conferences, to customers, etc.
-4. **Learning opportunity**: Study period project exploring IoT + Temporal + AI integration
+4. **Learning opportunity**: Study period project exploring IoT + Temporal Cloud + AI integration
 
 ### Key Features
 
-- Ziggy's entire lifecycle is a long-running Temporal workflow
+- Ziggy's entire lifecycle is a long-running Temporal workflow in Temporal Cloud
 - Button presses send signals to the workflow
 - LCD displays state queried from the workflow
-- Temporal UI accessible via browser to see workflow internals
+- Temporal UI accessible at cloud.temporal.io—see all team Ziggys in one namespace
 - AI-generated personality responses with offline fallback pool
+- Device is thin client—Ziggy survives device failure
 
 ---
 
 ## Architecture
 
+### Overview
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Temporal Cloud                     │
+│                                                     │
+│   Namespace: ziggy-prod                             │
+│                                                     │
+│   ┌─────────────┐ ┌─────────────┐ ┌─────────────┐  │
+│   │ ziggy-ross  │ │ ziggy-mia   │ │ ziggy-alex  │  │
+│   │ (workflow)  │ │ (workflow)  │ │ (workflow)  │  │
+│   └─────────────┘ └─────────────┘ └─────────────┘  │
+│                                                     │
+└───────────────────────┬─────────────────────────────┘
+                        │ gRPC + mTLS
+                        │
+        ┌───────────────┼───────────────┐
+        │               │               │
+   ┌────▼────┐    ┌─────▼────┐    ┌────▼─────┐
+   │Pi Zero  │    │ Pi Zero  │    │ Pi Zero  │
+   │(Ross)   │    │ (Mia)    │    │ (Alex)   │
+   │         │    │          │    │          │
+   │Go Worker│    │Go Worker │    │Go Worker │
+   │Python UI│    │Python UI │    │Python UI │
+   └─────────┘    └──────────┘    └──────────┘
+```
+
 ### Development Mode (Mac)
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                     Mac                             │
+│                       Mac                           │
 │                                                     │
 │  ┌─────────────────────┐    ┌───────────────────┐  │
-│  │     Go Binary       │    │    Web Browser    │  │
+│  │     Go Worker       │    │    Web Browser    │  │
 │  │                     │    │                   │  │
-│  │  - Temporal Worker  │    │  - Svelte UI      │  │
-│  │  - Ziggy Workflow   │◄──►│  - Canvas render  │  │
+│  │  - Connects to      │    │  - Svelte UI      │  │
+│  │    Temporal Cloud   │◄──►│  - Canvas render  │  │
 │  │  - HTTP API         │    │  - Keyboard input │  │
 │  │  - Voice/AI logic   │    │                   │  │
 │  │                     │    │                   │  │
 │  └─────────────────────┘    └───────────────────┘  │
 │           │                          ▲             │
-│           ▼                     localhost:5173     │
-│     Temporal Dev Server              │             │
-│     (gRPC :7233, UI :8233)           │             │
-│                                      │             │
-│     Go serves: localhost:8080 ───────┘             │
+│           │                     localhost:5173     │
+│           ▼                                        │
+│     Temporal Cloud                                 │
+│     (cloud.temporal.io)                            │
 └─────────────────────────────────────────────────────┘
 ```
 
-### Production Mode (Raspberry Pi)
+### Production Mode (Pi Zero 2 W)
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                      Pi 4                           │
+│                   Pi Zero 2 W                       │
 │                                                     │
 │  ┌─────────────────────┐    ┌───────────────────┐  │
-│  │     Go Binary       │    │   Python Client   │  │
+│  │     Go Worker       │    │   Python Client   │  │
 │  │                     │    │                   │  │
-│  │  - Temporal Worker  │    │  - LCD rendering  │  │
-│  │  - Ziggy Workflow   │◄──►│  - GPIO buttons   │  │
-│  │  - HTTP API         │    │  - Query state    │  │
-│  │  - Voice/AI logic   │    │  - Send signals   │  │
+│  │  - Connects to      │    │  - LCD rendering  │  │
+│  │    Temporal Cloud   │◄──►│  - GPIO buttons   │  │
+│  │  - HTTP API (local) │    │  - Sends signals  │  │
+│  │  - Voice/AI logic   │    │  - Queries state  │  │
 │  │                     │    │                   │  │
 │  └─────────────────────┘    └───────────────────┘  │
 │           │                          │             │
+│           │ gRPC + mTLS              │ SPI/GPIO    │
 │           ▼                          ▼             │
-│     Temporal Dev Server         LCD + Buttons      │
-│     (UI exposed on network)                        │
+│     Temporal Cloud              LCD + Buttons      │
 └─────────────────────────────────────────────────────┘
 ```
 
-### Why This Split?
+### Why This Architecture?
 
-- **Go for Temporal**: Lean, fast, compiles to single binary, familiar SDK
-- **Python for hardware**: Best-in-class Pi ecosystem (GPIO, SPI displays)
-- **Svelte for dev UI**: Fast iteration, your expertise, swappable later
-- **Clean boundary**: Python/Web are thin clients, all game logic in Go
+- **Temporal Cloud**: No local server, minimal Pi resources, shared namespace for team
+- **Pi Zero 2 W**: $15 vs $45, smaller, sufficient for worker + display
+- **Go Worker**: Lean, compiles for ARM, handles all Temporal interaction
+- **Python Display**: Best Pi hardware ecosystem, thin client only
+- **True Durability**: Ziggy survives device failure—workflow lives in cloud
 
 ---
 
 ## Tech Stack
 
-### Go Backend
+### Go Worker
 
 | Purpose | Library |
 |---------|---------|
@@ -107,25 +139,53 @@ Ziggy is Temporal's tardigrade mascot. Tardigrades are famously indestructible�
 
 | Purpose | Library |
 |---------|---------|
-| Temporal client | `temporalio` |
+| HTTP client | `httpx` |
 | Display | `st7789` + `Pillow` |
 | GPIO/Buttons | `gpiozero` |
 | Async | `asyncio` |
 
-### Hardware BOM
+---
 
-| Part | Specific Model | ~Cost |
-|------|----------------|-------|
-| Pi | Raspberry Pi 4 Model B 2GB+ | $45 |
-| Display | Pimoroni 1.3" SPI LCD (240x240, ST7789) | $15 |
-| Buttons | 3x tactile buttons + caps | $5 |
-| Speaker | (optional) PAM8403 amp + small speaker | $8 |
-| Power | Official Pi 4 USB-C PSU | $10 |
-| SD Card | 32GB | $10 |
-| Case | 3D printed | $0 |
-| Misc | Jumper wires, standoffs | $5 |
+## Temporal Cloud Setup
 
-**Total: ~$100 per unit**
+### Namespace
+
+Create a namespace for the fleet:
+
+```
+Name: ziggy-prod
+Retention: 30 days
+```
+
+### API Keys
+
+Generate an API key with permissions:
+- `namespace:ziggy-prod:write`
+- `namespace:ziggy-prod:read`
+
+Store securely—will be deployed as device variable.
+
+### Workflow IDs
+
+Each team member's Ziggy has a unique workflow ID:
+
+```
+ziggy-{owner}-gen-{n}
+
+Examples:
+- ziggy-ross-gen-1
+- ziggy-ross-gen-2  (after evolution/continue-as-new)
+```
+
+### Viewing Workflows
+
+All team Ziggys visible at:
+
+```
+https://cloud.temporal.io/namespaces/ziggy-prod/workflows
+```
+
+Great for demos, mutual accountability ("your Ziggy is starving!").
 
 ---
 
@@ -164,7 +224,7 @@ else → "neutral"
 ### Special Mechanics
 
 - **Tun State**: If HP hits 0, Ziggy enters cryptobiosis (tardigrade hibernation) instead of dying. Can be revived with sustained care. On-brand with tardigrade lore.
-- **Sleep Cycle**: Ziggy sleeps at night (configurable hours). Different rules apply—waking Ziggy is bad for happiness.
+- **Sleep Cycle**: Ziggy sleeps at night (configurable per timezone). Different rules apply—waking Ziggy is bad for happiness.
 - **Overcare Penalty**: Feeding when full makes Ziggy sick. Teaches checking state before acting.
 - **Random Events**: Ziggy gets sick, finds treasure, wants to play a specific game. Generated via scheduled activities.
 - **Continue-as-new**: Evolution transitions trigger continue-as-new, keeping workflow history bounded. Visible in Temporal UI.
@@ -191,6 +251,7 @@ else → "neutral"
 | Continue-as-new | Evolution stage transitions |
 | Workflow state | Stats, history, personality |
 | Activities | AI API calls, event generation |
+| Cloud deployment | Production namespace, mTLS auth |
 
 ---
 
@@ -199,7 +260,7 @@ else → "neutral"
 ### Strategy: API with Pool Fallback
 
 1. When online, call Claude API for fresh responses
-2. When offline, fall back to pre-generated response pool
+2. When offline (or API fails), fall back to pre-generated response pool
 3. Optionally cache good API responses to grow the pool over time
 
 ### Response Categories
@@ -231,26 +292,6 @@ pool/
     └── evolution_stages.json
 ```
 
-### Pool Entry Structure
-
-```json
-{
-  "category": "feed_success",
-  "entries": [
-    {
-      "text": "Mmm, perfect.\nI can survive\nanother eon.",
-      "min_hunger": 30,
-      "max_hunger": 70
-    },
-    {
-      "text": "I was mass-\nextinction levels\nof hungry.",
-      "min_hunger": 0,
-      "max_hunger": 30
-    }
-  ]
-}
-```
-
 ### AI Prompt Context
 
 ```
@@ -280,8 +321,6 @@ Respond to being {action}ed.
 LCD is 240x240 pixels. Text area allows roughly:
 - 3 lines maximum
 - ~20 characters per line
-
-Responses must be formatted for this constraint.
 
 ---
 
@@ -337,27 +376,17 @@ ziggy/
 │
 ├── assets/                       # Shared assets
 │   ├── sprites/
-│   │   ├── ziggy_happy.png
-│   │   ├── ziggy_neutral.png
-│   │   ├── ziggy_hungry.png
-│   │   ├── ziggy_sad.png
-│   │   ├── ziggy_sleeping.png
-│   │   ├── ziggy_critical.png
-│   │   └── ziggy_tun.png
 │   └── backgrounds/
-│       ├── night.png
-│       ├── dawn.png
-│       ├── day.png
-│       └── dusk.png
 │
 └── scripts/
-    ├── generate_pool.go          # One-time pool generation
-    └── install_pi.sh             # Pi setup script
+    └── generate_pool.go          # One-time pool generation
 ```
 
 ---
 
 ## API Endpoints
+
+Local HTTP API served by Go worker (for Python client):
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -366,8 +395,7 @@ ziggy/
 | `POST /api/signal/play` | POST | Send play signal |
 | `POST /api/signal/pet` | POST | Send pet signal |
 | `GET /api/health` | GET | Health check |
-| `GET /` | GET | Serve web UI (production) |
-| `GET /assets/*` | GET | Serve sprites/backgrounds |
+| `GET /` | GET | Serve web UI (dev mode) |
 
 ### State Response Schema
 
@@ -391,69 +419,36 @@ interface ZiggyState {
 
 ---
 
-## Visual Design
+## Environment Variables
 
-### Brand Alignment
+### Go Worker
 
-Match Temporal's aesthetic:
-- Deep purple/navy base (#1a1a2e, #2d1b4e)
-- Subtle perspective grid lines (Tron-style)
-- Soft teal accents (#4ade80)
-- Muted pink/magenta highlights
-- Forest silhouette elements (organic + digital contrast)
-- Synthwave but subtle and professional
+```bash
+# Temporal Cloud
+TEMPORAL_ADDRESS=ziggy-prod.a]b12.tmprl.cloud:7233
+TEMPORAL_NAMESPACE=ziggy-prod
+TEMPORAL_API_KEY=<api-key>
 
-### Ziggy Character
+# Or mTLS (alternative)
+TEMPORAL_TLS_CERT=/path/to/client.pem
+TEMPORAL_TLS_KEY=/path/to/client.key
 
-Base design: Lavender/periwinkle tardigrade with:
-- Soft rounded blob-like body
-- 8 stubby legs with small gray claws
-- Large expressive black eyes with white highlights
-- Rosy pink cheeks
-- Wide happy mouth (when content)
-- Subtle body segment lines
+# AI
+ANTHROPIC_API_KEY=sk-ant-...
 
-### Sprite States Needed
+# Device
+OWNER_NAME=ross
+TIMEZONE=America/Los_Angeles
 
-**Idle states:**
-- Happy (default, slight bounce pose)
-- Neutral (relaxed)
-- Hungry (droopy, pleading look)
-- Sad (tears, drooping posture)
-
-**Action states:**
-- Eating (mouth open, happy)
-- Playing (energetic, wiggling)
-- Being petted (eyes closed, blissful)
-- Sleeping (curled, eyes closed, "zzz")
-
-**Health states:**
-- Sick (green tinge, swirly eyes)
-- Critical (pale, weak)
-- Tun state (curled ball, grayscale)
-- Reviving (uncurling, color returning)
-
-**Evolution stages:**
-- Egg
-- Baby (tiny, bigger head ratio)
-- Adult (standard)
-- Elder (wise appearance)
-
-### Background Variations
-
-Four time-of-day versions of same scene:
-1. **Night** (default) - deep purple, stars, teal glow
-2. **Dawn** - warmer purple, pink horizon
-3. **Day** - lighter purples, brighter
-4. **Dusk** - orange/pink bleeding into purple
-
-All maintain: subtle grid, forest silhouette, uncluttered center for character.
+# Local API
+HTTP_PORT=8080
+```
 
 ---
 
 ## Development Phases
 
-### Phase 1: Web UI Foundation (Current)
+### Phase 1: Web UI Foundation
 
 - [ ] Scaffold Svelte + Vite project
 - [ ] Create mock store with all game state
@@ -463,16 +458,18 @@ All maintain: subtle grid, forest silhouette, uncluttered center for character.
 - [ ] Placeholder sprites (colored rectangles OK)
 - [ ] Get game feel right
 
-### Phase 2: Go Backend
+### Phase 2: Go Worker + Temporal Cloud
 
+- [ ] Set up Temporal Cloud namespace
 - [ ] Scaffold Go project structure
 - [ ] Implement ZiggyState and signal types
 - [ ] Create Ziggy workflow with basic lifecycle
 - [ ] Add decay activities (scheduled)
 - [ ] Implement queries for state
+- [ ] Connect to Temporal Cloud (mTLS or API key)
 - [ ] Build HTTP API server
 - [ ] Connect Svelte UI to real API
-- [ ] Test with Temporal dev server
+- [ ] Test workflow persistence and signals
 
 ### Phase 3: AI Integration
 
@@ -496,12 +493,12 @@ All maintain: subtle grid, forest silhouette, uncluttered center for character.
 
 ### Phase 5: Hardware
 
-- [ ] Order Pi + components
+- [ ] Order Pi Zero 2 W + components
 - [ ] Design 3D printed case
 - [ ] Write Python hardware client
 - [ ] Test display rendering
 - [ ] Wire up buttons
-- [ ] Create Pi setup script
+- [ ] Set up Balena fleet
 - [ ] Test full stack on device
 - [ ] Document assembly for team
 
@@ -510,90 +507,46 @@ All maintain: subtle grid, forest silhouette, uncluttered center for character.
 ## Development Commands
 
 ```bash
-# Terminal 1: Temporal server
-temporal server start-dev
-
-# Terminal 2: Go backend
-go run main.go
-
-# Terminal 3: Svelte frontend (dev mode)
+# Terminal 1: Svelte frontend (dev mode)
 cd web && npm run dev
 
-# Build for production
-cd web && npm run build
-go build -o ziggy main.go
+# Terminal 2: Go worker (connects to Temporal Cloud)
+export TEMPORAL_ADDRESS=ziggy-prod.abc123.tmprl.cloud:7233
+export TEMPORAL_NAMESPACE=ziggy-prod
+export TEMPORAL_API_KEY=<key>
+go run main.go
+
+# Build for Pi Zero (ARM)
+GOOS=linux GOARCH=arm GOARM=6 go build -o ziggy-arm main.go
 ```
 
 ---
 
-## Environment Variables
+## Visual Design
 
-```bash
-# Go backend
-ANTHROPIC_API_KEY=sk-ant-...     # For AI responses
-TEMPORAL_ADDRESS=localhost:7233   # Temporal server
-HTTP_PORT=8080                    # API server port
+### Brand Alignment
 
-# Optional
-ZIGGY_WORKFLOW_ID=ziggy-dev       # Workflow ID
-DECAY_INTERVAL=300                # Seconds between decay ticks
-SLEEP_START_HOUR=22               # 10 PM
-SLEEP_END_HOUR=7                  # 7 AM
-```
+Match Temporal's aesthetic:
+- Deep purple/navy base (#1a1a2e, #2d1b4e)
+- Subtle perspective grid lines (Tron-style)
+- Soft teal accents (#4ade80)
+- Muted pink/magenta highlights
+- Forest silhouette elements (organic + digital contrast)
+- Synthwave but subtle and professional
 
----
+### Sprite States Needed
 
-## Workflow ID Naming
+**Idle states:** happy, neutral, hungry, sad
 
-```
-ziggy-{owner}-gen-{n}
+**Action states:** eating, playing, being petted, sleeping
 
-Examples:
-- ziggy-ross-gen-1
-- ziggy-ross-gen-2  (after evolution/continue-as-new)
-```
+**Health states:** sick, critical, tun state, reviving
 
-Visible in Temporal UI, makes lineage clear.
+**Evolution stages:** egg, baby, adult, elder
 
----
+### Background Variations
 
-## Testing Checklist
-
-### Game Mechanics
-- [ ] Stats decay over time
-- [ ] Feed increases hunger, caps at 100
-- [ ] Play increases happiness, decreases hunger
-- [ ] Pet increases bond
-- [ ] HP drains when any stat is 0
-- [ ] HP recovers when stats are healthy
-- [ ] Cooldowns prevent spam
-- [ ] Overfeeding causes sickness
-- [ ] Sleep cycle activates at night
-- [ ] Interacting during sleep has penalty
-
-### Temporal Integration
-- [ ] Workflow starts and persists
-- [ ] Signals arrive and update state
-- [ ] Queries return current state
-- [ ] Scheduled activities fire correctly
-- [ ] Workflow survives server restart
-- [ ] Continue-as-new works for evolution
-- [ ] UI shows workflow history accurately
-
-### AI/Voice
-- [ ] API calls succeed when online
-- [ ] Fallback to pool when offline
-- [ ] Responses match current state context
-- [ ] Messages fit display constraints
-- [ ] Pool responses feel varied
-
-### Hardware (Phase 5)
-- [ ] Display renders correctly
-- [ ] Buttons register presses
-- [ ] Signals sent on button press
-- [ ] State queries update display
-- [ ] Pi boots and auto-starts Ziggy
-- [ ] Temporal UI accessible on network
+Four time-of-day versions: night, dawn, day, dusk
 
 ---
 
@@ -708,11 +661,9 @@ DO NOT:
 
 ## References
 
+- Temporal Cloud: https://cloud.temporal.io
 - Temporal Go SDK: https://docs.temporal.io/develop/go
-- Temporal Python SDK: https://docs.temporal.io/develop/python
-- periph.io (Go hardware): https://periph.io
-- ST7789 Python library: https://github.com/pimoroni/st7789-python
-- gpiozero: https://gpiozero.readthedocs.io
 - Anthropic Go SDK: https://github.com/anthropics/anthropic-sdk-go
 - Svelte: https://svelte.dev
 - Vite: https://vitejs.dev
+- Balena: https://www.balena.io
