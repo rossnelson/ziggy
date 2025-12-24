@@ -448,28 +448,41 @@ HTTP_PORT=8080
 
 ## Development Phases
 
-### Phase 1: Web UI Foundation
+### Phase 1: Web UI Foundation ✓
 
-- [ ] Scaffold Svelte + Vite project
-- [ ] Create mock store with all game state
-- [ ] Build core components (Game, Ziggy, Stats, Controls)
-- [ ] Implement mock actions with state transitions
-- [ ] Add DevTools for testing different states
-- [ ] Placeholder sprites (colored rectangles OK)
-- [ ] Get game feel right
+- [x] Scaffold Svelte + Vite project
+- [x] Create mock store with all game state
+- [x] Build core components (Game, Ziggy, Stats, Controls, Message, Background)
+- [x] Implement mock actions with state transitions
+- [x] Add DevTools for testing different states
+- [x] Placeholder sprites (using actual assets)
+- [x] Get game feel right
 
-### Phase 2: Go Worker + Temporal Cloud
+### Phase 2: Go Worker + Temporal (Local First)
 
+**Completed:**
+- [x] Scaffold Go project structure (Cobra CLI)
+- [x] Implement ZiggyState and signal types
+- [x] Create Ziggy workflow with selector loop
+- [x] Add decay timer (10s interval)
+- [x] Implement queries for state
+- [x] Build HTTP API server with CORS
+- [x] Implement continue-as-new (history limit trigger)
+- [x] Add message pools for different actions/moods
+
+**Remaining:**
+- [ ] Flip `USE_MOCK` to connect UI to real API
+- [ ] Add time-of-day updates based on timezone
+- [ ] Implement automatic sleep/wake cycle
+- [ ] Add evolution mechanics (stage transitions based on age)
+- [ ] Implement tun state (cryptobiosis when HP=0)
+- [ ] Add revival mechanics from tun state
+- [ ] Test workflow persistence across restarts
+- [ ] Workflow auto-start on worker boot
+
+**Cloud (last step):**
 - [ ] Set up Temporal Cloud namespace
-- [ ] Scaffold Go project structure
-- [ ] Implement ZiggyState and signal types
-- [ ] Create Ziggy workflow with basic lifecycle
-- [ ] Add decay activities (scheduled)
-- [ ] Implement queries for state
 - [ ] Connect to Temporal Cloud (mTLS or API key)
-- [ ] Build HTTP API server
-- [ ] Connect Svelte UI to real API
-- [ ] Test workflow persistence and signals
 
 ### Phase 3: AI Integration
 

@@ -2,9 +2,7 @@ package workflow
 
 import (
 	"math/rand"
-	"time"
 
-	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -15,12 +13,11 @@ const (
 	SignalWake = "wake"
 
 	QueryState = "state"
-
-	DecayInterval = 10 * time.Second
 )
 
 type ZiggyInput struct {
 	Owner      string `json:"owner"`
+	Timezone   string `json:"timezone"`
 	Generation int    `json:"generation"`
 }
 
@@ -28,13 +25,17 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Ziggy workflow started", "owner", input.Owner, "generation", input.Generation)
 
-	state := NewZiggyState()
+	timezone := input.Timezone
+	if timezone == "" {
+		timezone = "America/Los_Angeles"
+	}
+
+	state := NewZiggyState(timezone)
 	state.Generation = input.Generation
 	if state.Generation == 0 {
 		state.Generation = 1
 	}
 
-	// Set up query handler for state
 	err := workflow.SetQueryHandler(ctx, QueryState, func() (ZiggyState, error) {
 		return state, nil
 	})
@@ -42,67 +43,66 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		return err
 	}
 
-	// Signal channels
 	feedCh := workflow.GetSignalChannel(ctx, SignalFeed)
 	playCh := workflow.GetSignalChannel(ctx, SignalPlay)
 	petCh := workflow.GetSignalChannel(ctx, SignalPet)
 	wakeCh := workflow.GetSignalChannel(ctx, SignalWake)
 
-	// Decay timer
-	decayTimer := workflow.NewTimer(ctx, DecayInterval)
-
 	for {
 		selector := workflow.NewSelector(ctx)
 
-		// Handle feed signal
 		selector.AddReceive(feedCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
 			c.Receive(ctx, &signal)
+			now := workflow.Now(ctx)
+			state = state.CalculateCurrentState(now)
 			handleFeed(&state, logger)
+			state.LastUpdateTime = now
 		})
 
-		// Handle play signal
 		selector.AddReceive(playCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
 			c.Receive(ctx, &signal)
+			now := workflow.Now(ctx)
+			state = state.CalculateCurrentState(now)
 			handlePlay(&state, logger)
+			state.LastUpdateTime = now
 		})
 
-		// Handle pet signal
 		selector.AddReceive(petCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
 			c.Receive(ctx, &signal)
+			now := workflow.Now(ctx)
+			state = state.CalculateCurrentState(now)
 			handlePet(&state, logger)
+			state.LastUpdateTime = now
 		})
 
-		// Handle wake signal
 		selector.AddReceive(wakeCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
 			c.Receive(ctx, &signal)
+			now := workflow.Now(ctx)
+			state = state.CalculateCurrentState(now)
 			handleWake(&state, logger)
-		})
-
-		// Handle decay timer
-		selector.AddFuture(decayTimer, func(f workflow.Future) {
-			handleDecay(&state, logger)
-			decayTimer = workflow.NewTimer(ctx, DecayInterval)
+			state.LastUpdateTime = now
 		})
 
 		selector.Select(ctx)
 
-		// Check for continue-as-new (e.g., after evolution or history limit)
 		if workflow.GetInfo(ctx).GetCurrentHistoryLength() > 10000 {
 			logger.Info("Continuing as new due to history length")
 			return workflow.NewContinueAsNewError(ctx, ZiggyWorkflow, ZiggyInput{
 				Owner:      input.Owner,
-				Generation: state.Generation,
+				Timezone:   input.Timezone,
+				Generation: state.Generation + 1,
 			})
 		}
 	}
 }
 
-func handleFeed(state *ZiggyState, logger log.Logger) {
+func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
 	if state.Sleeping {
+		state.Message = pickRandom(messagesFeedSleeping)
 		logger.Info("Cannot feed - Ziggy is sleeping")
 		return
 	}
@@ -132,8 +132,9 @@ func handleFeed(state *ZiggyState, logger log.Logger) {
 	logger.Info("Fed Ziggy", "fullness", state.Fullness, "happiness", state.Happiness)
 }
 
-func handlePlay(state *ZiggyState, logger log.Logger) {
+func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
 	if state.Sleeping {
+		state.Message = pickRandom(messagesPlaySleeping)
 		logger.Info("Cannot play - Ziggy is sleeping")
 		return
 	}
@@ -159,7 +160,7 @@ func handlePlay(state *ZiggyState, logger log.Logger) {
 	logger.Info("Played with Ziggy", "happiness", state.Happiness, "fullness", state.Fullness)
 }
 
-func handlePet(state *ZiggyState, logger log.Logger) {
+func handlePet(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
 	if state.Sleeping {
 		state.Bond += 3
 		state.Message = pickRandom(messagesPetSleeping)
@@ -183,7 +184,7 @@ func handlePet(state *ZiggyState, logger log.Logger) {
 	logger.Info("Petted Ziggy", "bond", state.Bond, "happiness", state.Happiness)
 }
 
-func handleWake(state *ZiggyState, logger log.Logger) {
+func handleWake(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
 	if !state.Sleeping {
 		return
 	}
@@ -191,50 +192,17 @@ func handleWake(state *ZiggyState, logger log.Logger) {
 	state.Sleeping = false
 	state.Happiness -= 10
 	state.Message = "*yawn*\nI was having\nsuch a nice dream..."
+	state.LastAction = ActionWake
 	state.Clamp()
 	logger.Info("Woke Ziggy", "happiness", state.Happiness)
 }
 
-func handleDecay(state *ZiggyState, logger log.Logger) {
-	if state.Sleeping {
-		// During sleep: slow fullness decay, slow happiness recovery
-		state.Fullness -= 1
-		state.Happiness += 0.5
-
-		targetHP := (state.Fullness + state.Happiness + state.Bond) / 3
-		if state.HP < targetHP {
-			state.HP += 1
-		}
-	} else {
-		// Normal decay with bond protection
-		bondProtection := 0.0
-		if state.Bond > 50 {
-			bondProtection = (state.Bond - 50) / 100
-		}
-
-		state.Fullness -= 2 * (1 - bondProtection)
-		state.Happiness -= 1 * (1 - bondProtection)
-		state.Bond -= 0.5
-
-		// HP trends toward average of other stats
-		targetHP := (state.Fullness + state.Happiness + state.Bond) / 3
-		if state.HP > targetHP {
-			state.HP -= 2
-		} else if state.HP < targetHP {
-			state.HP += 1
-		}
+func GetIdleMessage(mood Mood) string {
+	msgs, ok := messagesIdle[mood]
+	if !ok {
+		msgs = messagesIdle[MoodNeutral]
 	}
-
-	state.Age += DecayInterval.Seconds()
-	state.Clamp()
-
-	// Update idle message periodically
-	mood := state.GetMood()
-	if msgs, ok := messagesIdle[mood]; ok {
-		state.Message = pickRandom(msgs)
-	}
-
-	logger.Debug("Decay tick", "fullness", state.Fullness, "happiness", state.Happiness, "hp", state.HP)
+	return pickRandom(msgs)
 }
 
 func pickRandom(messages []string) string {

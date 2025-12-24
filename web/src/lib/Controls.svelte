@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { sendFeed, sendPlay, sendPet } from './api';
-  import { getCooldownRemaining, ziggyState, wake } from './store';
+  import { sendFeed, sendPlay, sendPet, sendWake } from './api';
+  import { getCooldownRemaining, ziggyState } from './store';
 
   let feedCooldown = $state(0);
   let isFull = $derived($ziggyState.fullness > 90);
@@ -35,8 +35,8 @@
     updateCooldowns();
   }
 
-  function handleWake() {
-    wake();
+  async function handleWake() {
+    await sendWake();
   }
 
   function handleKeydown(event: KeyboardEvent) {

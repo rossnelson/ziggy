@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"ziggy/internal/temporal"
 	"ziggy/internal/workflow"
@@ -128,13 +129,12 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) queryState(ctx context.Context) (*workflow.ZiggyState, error) {
+func (s *Server) queryState(ctx context.Context) (*workflow.ZiggyStateResponse, error) {
 	result, err := s.registry.QueryWorkflow(ctx, s.workflowID, workflow.QueryState)
 	if err != nil {
 		return nil, err
 	}
 
-	// The result is already a ZiggyState, but we need to handle the interface conversion
 	data, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,12 @@ func (s *Server) queryState(ctx context.Context) (*workflow.ZiggyState, error) {
 		return nil, err
 	}
 
-	return &state, nil
+	// Calculate current state with real time (decay applied)
+	now := time.Now()
+	current := state.CalculateCurrentState(now)
+	// Keep the message from workflow state (only changes on actions/mood transitions)
+	response := current.ToResponse(now)
+	return &response, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

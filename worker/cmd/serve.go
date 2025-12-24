@@ -24,6 +24,7 @@ var serveCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(serveCmd)
 	serveCmd.Flags().Int("port", 8080, "HTTP server port")
+	serveCmd.Flags().String("timezone", "America/Los_Angeles", "Timezone for time-of-day calculations")
 	serveCmd.Flags().Bool("start-workflow", true, "Start the Ziggy workflow if not already running")
 }
 
@@ -33,6 +34,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	taskQueue, _ := cmd.Flags().GetString("task-queue")
 	owner, _ := cmd.Flags().GetString("owner")
 	port, _ := cmd.Flags().GetInt("port")
+	timezone, _ := cmd.Flags().GetString("timezone")
 	startWorkflow, _ := cmd.Flags().GetBool("start-workflow")
 
 	if owner == "" {
@@ -66,6 +68,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if startWorkflow {
 		_, err := registry.ExecuteWorkflow(ctx, workflowID, workflow.ZiggyWorkflow, workflow.ZiggyInput{
 			Owner:      owner,
+			Timezone:   timezone,
 			Generation: 1,
 		})
 		if err != nil {

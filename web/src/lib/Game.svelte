@@ -1,11 +1,29 @@
 <script lang="ts">
-  import { ziggyState, mood } from './store';
+  import { onMount, onDestroy } from 'svelte';
+  import { ziggyState, mood, startDecay, stopDecay } from './store';
+  import { startPolling, stopPolling, USE_MOCK } from './api';
   import Background from './Background.svelte';
   import Ziggy from './Ziggy.svelte';
   import Stats from './Stats.svelte';
   import Message from './Message.svelte';
   import Controls from './Controls.svelte';
   import DevTools from './DevTools.svelte';
+
+  onMount(() => {
+    if (USE_MOCK) {
+      startDecay();
+    } else {
+      startPolling();
+    }
+  });
+
+  onDestroy(() => {
+    if (USE_MOCK) {
+      stopDecay();
+    } else {
+      stopPolling();
+    }
+  });
 </script>
 
 <div class="game-container">

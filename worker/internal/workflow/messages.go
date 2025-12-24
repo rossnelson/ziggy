@@ -18,6 +18,11 @@ var messagesFeedHungry = []string{
 	"Food! Beautiful\nlife-giving food!",
 }
 
+var messagesFeedSleeping = []string{
+	"Zzz... not now...\nzzz...",
+	"*mumbles*\nfive more eons...",
+}
+
 var messagesPlaySuccess = []string{
 	"Wheee!\nThis is fun!",
 	"Again! Again!\nI have energy\nfor eons!",
@@ -32,6 +37,11 @@ var messagesPlayTired = []string{
 var messagesPlayHappy = []string{
 	"More playing!\nI love this!",
 	"Best day since\nthe Permian\nextinction!",
+}
+
+var messagesPlaySleeping = []string{
+	"Zzz... playing\nin my dreams...",
+	"*sleep-wiggles*",
 }
 
 var messagesPetSuccess = []string{
