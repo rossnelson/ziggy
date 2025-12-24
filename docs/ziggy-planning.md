@@ -464,21 +464,21 @@ HTTP_PORT=8080
 - [x] Scaffold Go project structure (Cobra CLI)
 - [x] Implement ZiggyState and signal types
 - [x] Create Ziggy workflow with selector loop
-- [x] Add decay timer (10s interval)
+- [x] Implement lazy decay (no timers, calculated on-demand)
 - [x] Implement queries for state
 - [x] Build HTTP API server with CORS
 - [x] Implement continue-as-new (history limit trigger)
 - [x] Add message pools for different actions/moods
+- [x] Connect UI to real API (USE_MOCK=false)
+- [x] Add time-of-day updates based on timezone
+- [x] Implement automatic sleep/wake cycle
+- [x] Workflow auto-start on worker boot
 
 **Remaining:**
-- [ ] Flip `USE_MOCK` to connect UI to real API
-- [ ] Add time-of-day updates based on timezone
-- [ ] Implement automatic sleep/wake cycle
-- [ ] Add evolution mechanics (stage transitions based on age)
-- [ ] Implement tun state (cryptobiosis when HP=0)
-- [ ] Add revival mechanics from tun state
-- [ ] Test workflow persistence across restarts
-- [ ] Workflow auto-start on worker boot
+- [x] Implement tun state (cryptobiosis when HP=0)
+- [x] Add revival mechanics from tun state
+- [x] Add evolution mechanics (stage transitions based on age)
+- [x] Test workflow persistence across restarts
 
 **Cloud (last step):**
 - [ ] Set up Temporal Cloud namespace

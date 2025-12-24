@@ -58,6 +58,12 @@ const (
 
 	HPDecayRate   = 2.0
 	HPRecoverRate = 1.0
+
+	// Evolution age thresholds (in seconds)
+	AgeEggTooBaby   = 60      // 1 minute
+	AgeBabyToTeen   = 300     // 5 minutes
+	AgeTeenToAdult  = 900     // 15 minutes
+	AgeAdultToElder = 3600    // 1 hour
 )
 
 type ZiggyState struct {
@@ -108,8 +114,8 @@ func NewZiggyState(timezone string) ZiggyState {
 		LastUpdateTime: now,
 		CreatedAt:      now,
 		Sleeping:       timeOfDay == TimeNight,
-		Stage:          StageAdult,
-		Message:        "I've survived\nworse than this.\nBut barely.",
+		Stage:          StageEgg,
+		Message:        "*wiggle*\n*wiggle*",
 		Timezone:       timezone,
 		Generation:     1,
 	}
@@ -157,6 +163,22 @@ func (s *ZiggyState) GetMood() Mood {
 		return MoodHappy
 	}
 	return MoodNeutral
+}
+
+func GetStageForAge(ageSeconds float64) Stage {
+	if ageSeconds < AgeEggTooBaby {
+		return StageEgg
+	}
+	if ageSeconds < AgeBabyToTeen {
+		return StageBaby
+	}
+	if ageSeconds < AgeTeenToAdult {
+		return StageTeen
+	}
+	if ageSeconds < AgeAdultToElder {
+		return StageAdult
+	}
+	return StageElder
 }
 
 func (s *ZiggyState) CalculateCurrentState(now time.Time) ZiggyState {
@@ -266,17 +288,18 @@ func clamp(value, min, max float64) float64 {
 }
 
 func (s *ZiggyState) ToResponse(now time.Time) ZiggyStateResponse {
+	age := now.Sub(s.CreatedAt).Seconds()
 	return ZiggyStateResponse{
 		Fullness:   s.Fullness,
 		Happiness:  s.Happiness,
 		Bond:       s.Bond,
 		HP:         s.HP,
-		Stage:      s.Stage,
+		Stage:      GetStageForAge(age),
 		TimeOfDay:  GetTimeOfDay(now, s.Timezone),
 		Sleeping:   s.Sleeping,
 		Message:    s.Message,
 		LastAction: s.LastAction,
-		Age:        now.Sub(s.CreatedAt).Seconds(),
+		Age:        age,
 		Generation: s.Generation,
 	}
 }

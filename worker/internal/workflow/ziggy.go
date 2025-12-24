@@ -101,6 +101,22 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 }
 
 func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+	// Tun state: feeding helps revival
+	if state.HP == 0 {
+		state.Fullness += 15
+		state.HP += 5 // Start revival
+		state.Message = pickRandom(messagesFeedTun)
+		state.LastAction = ActionFeed
+		state.Clamp()
+
+		// Check if revived
+		if state.HP >= 20 {
+			state.Message = pickRandom(messagesReviving)
+		}
+		logger.Info("Fed Ziggy in tun state - reviving", "hp", state.HP)
+		return
+	}
+
 	if state.Sleeping {
 		state.Message = pickRandom(messagesFeedSleeping)
 		logger.Info("Cannot feed - Ziggy is sleeping")
@@ -133,6 +149,14 @@ func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}
 }
 
 func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+	// Tun state: can't play
+	if state.HP == 0 {
+		state.Message = pickRandom(messagesPlayTun)
+		state.LastAction = ActionPlay
+		logger.Info("Cannot play - Ziggy is in tun state")
+		return
+	}
+
 	if state.Sleeping {
 		state.Message = pickRandom(messagesPlaySleeping)
 		logger.Info("Cannot play - Ziggy is sleeping")
@@ -161,6 +185,22 @@ func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}
 }
 
 func handlePet(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+	// Tun state: petting helps revival through warmth/bond
+	if state.HP == 0 {
+		state.Bond += 5
+		state.HP += 2 // Slow revival through comfort
+		state.Message = pickRandom(messagesPetTun)
+		state.LastAction = ActionPet
+		state.Clamp()
+
+		// Check if revived
+		if state.HP >= 20 {
+			state.Message = pickRandom(messagesReviving)
+		}
+		logger.Info("Petted Ziggy in tun state - warming up", "hp", state.HP, "bond", state.Bond)
+		return
+	}
+
 	if state.Sleeping {
 		state.Bond += 3
 		state.Message = pickRandom(messagesPetSleeping)

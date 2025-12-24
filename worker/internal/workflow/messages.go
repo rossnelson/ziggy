@@ -65,6 +65,29 @@ var messagesPetSleeping = []string{
 	"*snuggles closer*",
 }
 
+var messagesFeedTun = []string{
+	"*slight twitch*\n...",
+	"*absorbing*\n...",
+	"*faint glow*\nrehydrating...",
+}
+
+var messagesPetTun = []string{
+	"*warming up*\n...",
+	"*slight uncurl*\n...",
+	"*faint pulse*\nstill here...",
+}
+
+var messagesPlayTun = []string{
+	"*no response*\n...",
+	"*curled tight*\nnot now...",
+}
+
+var messagesReviving = []string{
+	"*stretching*\nI'm... back?",
+	"*uncurling*\nWhat year is it?",
+	"*blinking*\nI survived!\nAgain!",
+}
+
 var messagesIdle = map[Mood][]string{
 	MoodHappy: {
 		"Life is good.\nI've survived\nworse.",
