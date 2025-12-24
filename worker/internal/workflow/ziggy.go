@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"math/rand"
+	"time"
 
 	"go.temporal.io/sdk/workflow"
 )
@@ -56,7 +57,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			c.Receive(ctx, &signal)
 			now := workflow.Now(ctx)
 			state = state.CalculateCurrentState(now)
-			handleFeed(&state, logger)
+			handleFeed(&state, now, logger)
 			state.LastUpdateTime = now
 		})
 
@@ -65,7 +66,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			c.Receive(ctx, &signal)
 			now := workflow.Now(ctx)
 			state = state.CalculateCurrentState(now)
-			handlePlay(&state, logger)
+			handlePlay(&state, now, logger)
 			state.LastUpdateTime = now
 		})
 
@@ -74,7 +75,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			c.Receive(ctx, &signal)
 			now := workflow.Now(ctx)
 			state = state.CalculateCurrentState(now)
-			handlePet(&state, logger)
+			handlePet(&state, now, logger)
 			state.LastUpdateTime = now
 		})
 
@@ -83,7 +84,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			c.Receive(ctx, &signal)
 			now := workflow.Now(ctx)
 			state = state.CalculateCurrentState(now)
-			handleWake(&state, logger)
+			handleWake(&state, now, logger)
 			state.LastUpdateTime = now
 		})
 
@@ -100,25 +101,35 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	}
 }
 
-func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+func getPoolSelector(state *ZiggyState) *PoolSelector {
+	fallback := GetFallbackPool(state.Personality)
+	generic := GetFallbackPool(PersonalityStoic)
+	return NewPoolSelector(state.RuntimePool, fallback, generic)
+}
+
+func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
+	pool := getPoolSelector(state)
+	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
+	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+
 	// Tun state: feeding helps revival
 	if state.HP == 0 {
 		state.Fullness += 15
 		state.HP += 5 // Start revival
-		state.Message = pickRandom(messagesFeedTun)
+		state.Message = pool.Pick("feedTun")
 		state.LastAction = ActionFeed
 		state.Clamp()
 
 		// Check if revived
 		if state.HP >= 20 {
-			state.Message = pickRandom(messagesReviving)
+			state.Message = pool.Pick("reviving")
 		}
 		logger.Info("Fed Ziggy in tun state - reviving", "hp", state.HP)
 		return
 	}
 
 	if state.Sleeping {
-		state.Message = pickRandom(messagesFeedSleeping)
+		state.Message = pool.Pick("feedSleeping")
 		logger.Info("Cannot feed - Ziggy is sleeping")
 		return
 	}
@@ -132,15 +143,15 @@ func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}
 	if wasOverfed {
 		state.Fullness += 5
 		state.Happiness += -15 + bondProtection
-		state.Message = pickRandom(messagesFeedFull)
+		state.Message = pool.Pick("feedFull")
 	} else if state.Fullness < 30 {
 		state.Fullness += 25
 		state.Happiness += 5
-		state.Message = pickRandom(messagesFeedHungry)
+		state.Message = pool.Pick("feedHungry")
 	} else {
 		state.Fullness += 25
 		state.Happiness += 5
-		state.Message = pickRandom(messagesFeedSuccess)
+		state.Message = pool.Pick("feedSuccess")
 	}
 
 	state.LastAction = ActionFeed
@@ -148,17 +159,21 @@ func handleFeed(state *ZiggyState, logger interface{ Info(string, ...interface{}
 	logger.Info("Fed Ziggy", "fullness", state.Fullness, "happiness", state.Happiness)
 }
 
-func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+func handlePlay(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
+	pool := getPoolSelector(state)
+	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
+	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+
 	// Tun state: can't play
 	if state.HP == 0 {
-		state.Message = pickRandom(messagesPlayTun)
+		state.Message = pool.Pick("playTun")
 		state.LastAction = ActionPlay
 		logger.Info("Cannot play - Ziggy is in tun state")
 		return
 	}
 
 	if state.Sleeping {
-		state.Message = pickRandom(messagesPlaySleeping)
+		state.Message = pool.Pick("playSleeping")
 		logger.Info("Cannot play - Ziggy is sleeping")
 		return
 	}
@@ -167,15 +182,15 @@ func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}
 	if tooTired {
 		state.Happiness += 5
 		state.Fullness -= 5
-		state.Message = pickRandom(messagesPlayTired)
+		state.Message = pool.Pick("playTired")
 	} else {
 		state.Happiness += 20
 		state.Fullness -= 10
 		state.Bond += 5
 		if state.GetMood() == MoodHappy {
-			state.Message = pickRandom(messagesPlayHappy)
+			state.Message = pool.Pick("playHappy")
 		} else {
-			state.Message = pickRandom(messagesPlaySuccess)
+			state.Message = pool.Pick("playSuccess")
 		}
 	}
 
@@ -184,18 +199,22 @@ func handlePlay(state *ZiggyState, logger interface{ Info(string, ...interface{}
 	logger.Info("Played with Ziggy", "happiness", state.Happiness, "fullness", state.Fullness)
 }
 
-func handlePet(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+func handlePet(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
+	pool := getPoolSelector(state)
+	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
+	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+
 	// Tun state: petting helps revival through warmth/bond
 	if state.HP == 0 {
 		state.Bond += 5
 		state.HP += 2 // Slow revival through comfort
-		state.Message = pickRandom(messagesPetTun)
+		state.Message = pool.Pick("petTun")
 		state.LastAction = ActionPet
 		state.Clamp()
 
 		// Check if revived
 		if state.HP >= 20 {
-			state.Message = pickRandom(messagesReviving)
+			state.Message = pool.Pick("reviving")
 		}
 		logger.Info("Petted Ziggy in tun state - warming up", "hp", state.HP, "bond", state.Bond)
 		return
@@ -203,19 +222,19 @@ func handlePet(state *ZiggyState, logger interface{ Info(string, ...interface{})
 
 	if state.Sleeping {
 		state.Bond += 3
-		state.Message = pickRandom(messagesPetSleeping)
+		state.Message = pool.Pick("petSleeping")
 	} else if state.Bond > 90 {
 		state.Bond += 10
 		state.Happiness += 5
-		state.Message = pickRandom(messagesPetMaxBond)
+		state.Message = pool.Pick("petMaxBond")
 	} else {
 		state.Bond += 10
 		state.Happiness += 5
 		mood := state.GetMood()
 		if mood == MoodSad || mood == MoodHungry {
-			state.Message = pickRandom(messagesPetLowMood)
+			state.Message = pool.Pick("petLowMood")
 		} else {
-			state.Message = pickRandom(messagesPetSuccess)
+			state.Message = pool.Pick("petSuccess")
 		}
 	}
 
@@ -224,10 +243,13 @@ func handlePet(state *ZiggyState, logger interface{ Info(string, ...interface{})
 	logger.Info("Petted Ziggy", "bond", state.Bond, "happiness", state.Happiness)
 }
 
-func handleWake(state *ZiggyState, logger interface{ Info(string, ...interface{}) }) {
+func handleWake(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
 	if !state.Sleeping {
 		return
 	}
+
+	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
+	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
 
 	state.Sleeping = false
 	state.Happiness -= 10

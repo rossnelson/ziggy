@@ -83,6 +83,11 @@ type ZiggyState struct {
 
 	Timezone   string `json:"timezone"`
 	Generation int    `json:"generation"`
+
+	Personality     Personality  `json:"personality"`
+	CareMetrics     CareMetrics  `json:"careMetrics"`
+	RuntimePool     *MessagePool `json:"runtimePool,omitempty"`
+	PoolGeneratedAt time.Time    `json:"poolGeneratedAt,omitempty"`
 }
 
 type ZiggyStateResponse struct {
@@ -91,9 +96,10 @@ type ZiggyStateResponse struct {
 	Bond      float64 `json:"bond"`
 	HP        float64 `json:"hp"`
 
-	Stage     Stage     `json:"stage"`
-	TimeOfDay TimeOfDay `json:"timeOfDay"`
-	Sleeping  bool      `json:"sleeping"`
+	Stage       Stage       `json:"stage"`
+	TimeOfDay   TimeOfDay   `json:"timeOfDay"`
+	Sleeping    bool        `json:"sleeping"`
+	Personality Personality `json:"personality"`
 
 	Message    string `json:"message"`
 	LastAction Action `json:"lastAction,omitempty"`
@@ -118,6 +124,13 @@ func NewZiggyState(timezone string) ZiggyState {
 		Message:        "*wiggle*\n*wiggle*",
 		Timezone:       timezone,
 		Generation:     1,
+		Personality:    PersonalityShy,
+		CareMetrics: CareMetrics{
+			TotalInteractions: 0,
+			LastInteractionAt: now,
+			AvgFullness:       70,
+			AvgBond:           50,
+		},
 	}
 }
 
@@ -290,16 +303,17 @@ func clamp(value, min, max float64) float64 {
 func (s *ZiggyState) ToResponse(now time.Time) ZiggyStateResponse {
 	age := now.Sub(s.CreatedAt).Seconds()
 	return ZiggyStateResponse{
-		Fullness:   s.Fullness,
-		Happiness:  s.Happiness,
-		Bond:       s.Bond,
-		HP:         s.HP,
-		Stage:      GetStageForAge(age),
-		TimeOfDay:  GetTimeOfDay(now, s.Timezone),
-		Sleeping:   s.Sleeping,
-		Message:    s.Message,
-		LastAction: s.LastAction,
-		Age:        age,
-		Generation: s.Generation,
+		Fullness:    s.Fullness,
+		Happiness:   s.Happiness,
+		Bond:        s.Bond,
+		HP:          s.HP,
+		Stage:       GetStageForAge(age),
+		TimeOfDay:   GetTimeOfDay(now, s.Timezone),
+		Sleeping:    s.Sleeping,
+		Personality: s.Personality,
+		Message:     s.Message,
+		LastAction:  s.LastAction,
+		Age:         age,
+		Generation:  s.Generation,
 	}
 }
