@@ -64,6 +64,11 @@ const (
 	AgeBabyToTeen   = 300     // 5 minutes
 	AgeTeenToAdult  = 900     // 15 minutes
 	AgeAdultToElder = 3600    // 1 hour
+
+	// Action cooldowns
+	CooldownFeed = 30 * time.Second
+	CooldownPlay = 60 * time.Second
+	CooldownPet  = 10 * time.Second
 )
 
 type ZiggyState struct {
@@ -88,6 +93,11 @@ type ZiggyState struct {
 	CareMetrics     CareMetrics  `json:"careMetrics"`
 	RuntimePool     *MessagePool `json:"runtimePool,omitempty"`
 	PoolGeneratedAt time.Time    `json:"poolGeneratedAt,omitempty"`
+
+	// Cooldown tracking
+	LastFeedTime time.Time `json:"lastFeedTime,omitempty"`
+	LastPlayTime time.Time `json:"lastPlayTime,omitempty"`
+	LastPetTime  time.Time `json:"lastPetTime,omitempty"`
 }
 
 type ZiggyStateResponse struct {
@@ -106,6 +116,11 @@ type ZiggyStateResponse struct {
 
 	Age        float64 `json:"age"`
 	Generation int     `json:"generation"`
+
+	// Cooldown remaining in seconds (0 = ready)
+	FeedCooldown float64 `json:"feedCooldown"`
+	PlayCooldown float64 `json:"playCooldown"`
+	PetCooldown  float64 `json:"petCooldown"`
 }
 
 func NewZiggyState(timezone string) ZiggyState {
@@ -303,17 +318,57 @@ func clamp(value, min, max float64) float64 {
 func (s *ZiggyState) ToResponse(now time.Time) ZiggyStateResponse {
 	age := now.Sub(s.CreatedAt).Seconds()
 	return ZiggyStateResponse{
-		Fullness:    s.Fullness,
-		Happiness:   s.Happiness,
-		Bond:        s.Bond,
-		HP:          s.HP,
-		Stage:       GetStageForAge(age),
-		TimeOfDay:   GetTimeOfDay(now, s.Timezone),
-		Sleeping:    s.Sleeping,
-		Personality: s.Personality,
-		Message:     s.Message,
-		LastAction:  s.LastAction,
-		Age:         age,
-		Generation:  s.Generation,
+		Fullness:     s.Fullness,
+		Happiness:    s.Happiness,
+		Bond:         s.Bond,
+		HP:           s.HP,
+		Stage:        GetStageForAge(age),
+		TimeOfDay:    GetTimeOfDay(now, s.Timezone),
+		Sleeping:     s.Sleeping,
+		Personality:  s.Personality,
+		Message:      s.Message,
+		LastAction:   s.LastAction,
+		Age:          age,
+		Generation:   s.Generation,
+		FeedCooldown: cooldownRemaining(s.LastFeedTime, s.GetEffectiveCooldown(ActionFeed), now),
+		PlayCooldown: cooldownRemaining(s.LastPlayTime, s.GetEffectiveCooldown(ActionPlay), now),
+		PetCooldown:  cooldownRemaining(s.LastPetTime, s.GetEffectiveCooldown(ActionPet), now),
+	}
+}
+
+func cooldownRemaining(lastTime time.Time, cooldown time.Duration, now time.Time) float64 {
+	if lastTime.IsZero() {
+		return 0
+	}
+	elapsed := now.Sub(lastTime)
+	if elapsed >= cooldown {
+		return 0
+	}
+	return (cooldown - elapsed).Seconds()
+}
+
+func cooldownMultiplier(stat float64) float64 {
+	if stat < 20 {
+		return 0.25
+	}
+	if stat < 40 {
+		return 0.5
+	}
+	if stat < 60 {
+		return 0.75
+	}
+	return 1.0
+}
+
+func (s *ZiggyState) GetEffectiveCooldown(action Action) time.Duration {
+	switch action {
+	case ActionFeed:
+		return time.Duration(float64(CooldownFeed) * cooldownMultiplier(s.Fullness))
+	case ActionPlay:
+		return time.Duration(float64(CooldownPlay) * cooldownMultiplier(s.Happiness))
+	case ActionPet:
+		return time.Duration(float64(CooldownPet) * cooldownMultiplier(s.Bond))
+	default:
+		return 0
 	}
 }

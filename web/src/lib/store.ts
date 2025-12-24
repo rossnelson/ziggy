@@ -26,6 +26,9 @@ export interface ZiggyState {
   lastActionTime: number | null;
   age: number;
   generation: number;
+  feedCooldown: number;
+  playCooldown: number;
+  petCooldown: number;
 }
 
 interface Cooldowns {
@@ -67,6 +70,9 @@ const initialState: ZiggyState = {
   lastActionTime: null,
   age: 0,
   generation: 1,
+  feedCooldown: 0,
+  playCooldown: 0,
+  petCooldown: 0,
 };
 
 export const ziggyState = writable<ZiggyState>(initialState);
@@ -302,11 +308,14 @@ function setCooldown(action: Action) {
 }
 
 export function getCooldownRemaining(action: Action): number {
-  const cd = get(cooldowns);
-  const lastTime = cd[action];
-  if (!lastTime) return 0;
-  const remaining = COOLDOWN_MS[action] - (Date.now() - lastTime);
-  return Math.max(0, remaining);
+  const state = get(ziggyState);
+  const cooldownSeconds =
+    action === 'feed'
+      ? state.feedCooldown
+      : action === 'play'
+        ? state.playCooldown
+        : state.petCooldown;
+  return Math.max(0, cooldownSeconds * 1000);
 }
 
 export function feed(): boolean {

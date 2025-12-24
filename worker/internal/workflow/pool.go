@@ -8,18 +8,21 @@ type MessagePool struct {
 	FeedHungry   []string `json:"feedHungry"`
 	FeedSleeping []string `json:"feedSleeping"`
 	FeedTun      []string `json:"feedTun"`
+	FeedCooldown []string `json:"feedCooldown"`
 
 	PlaySuccess  []string `json:"playSuccess"`
 	PlayTired    []string `json:"playTired"`
 	PlayHappy    []string `json:"playHappy"`
 	PlaySleeping []string `json:"playSleeping"`
 	PlayTun      []string `json:"playTun"`
+	PlayCooldown []string `json:"playCooldown"`
 
 	PetSuccess   []string `json:"petSuccess"`
 	PetMaxBond   []string `json:"petMaxBond"`
 	PetLowMood   []string `json:"petLowMood"`
 	PetSleeping  []string `json:"petSleeping"`
 	PetTun       []string `json:"petTun"`
+	PetCooldown  []string `json:"petCooldown"`
 
 	Reviving []string `json:"reviving"`
 
@@ -89,6 +92,8 @@ func (s *PoolSelector) getFromPool(pool *MessagePool, category string) []string 
 		return pool.FeedSleeping
 	case "feedTun":
 		return pool.FeedTun
+	case "feedCooldown":
+		return pool.FeedCooldown
 	case "playSuccess":
 		return pool.PlaySuccess
 	case "playTired":
@@ -99,6 +104,8 @@ func (s *PoolSelector) getFromPool(pool *MessagePool, category string) []string 
 		return pool.PlaySleeping
 	case "playTun":
 		return pool.PlayTun
+	case "playCooldown":
+		return pool.PlayCooldown
 	case "petSuccess":
 		return pool.PetSuccess
 	case "petMaxBond":
@@ -109,6 +116,8 @@ func (s *PoolSelector) getFromPool(pool *MessagePool, category string) []string 
 		return pool.PetSleeping
 	case "petTun":
 		return pool.PetTun
+	case "petCooldown":
+		return pool.PetCooldown
 	case "reviving":
 		return pool.Reviving
 	case "idleHappy":

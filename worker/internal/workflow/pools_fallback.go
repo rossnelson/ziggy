@@ -36,6 +36,10 @@ var poolStoic = &MessagePool{
 		"*slight twitch*\nRehydrating...",
 		"*absorbing*\n...",
 	},
+	FeedCooldown: []string{
+		"Still digesting.\nPatience.",
+		"Processing\nprevious meal.",
+	},
 	PlaySuccess: []string{
 		"Acceptable\nrecreation.",
 		"Movement noted.\nEndorphins released.",
@@ -53,6 +57,10 @@ var poolStoic = &MessagePool{
 	PlayTun: []string{
 		"*no response*\nDormant.",
 	},
+	PlayCooldown: []string{
+		"Rest period\nrequired.",
+		"Energy reserves\nrecharging.",
+	},
 	PetSuccess: []string{
 		"Acknowledged.\nBond protocols\nengaged.",
 		"Tactile input\nregistered.",
@@ -68,6 +76,10 @@ var poolStoic = &MessagePool{
 	},
 	PetTun: []string{
 		"*warming*\nSystems\nrebooting...",
+	},
+	PetCooldown: []string{
+		"Sufficient\ncontact made.",
+		"Bond signal\nreceived.",
 	},
 	Reviving: []string{
 		"*uncurling*\nSystems online.",
@@ -122,6 +134,10 @@ var poolDramatic = &MessagePool{
 	FeedTun: []string{
 		"*gasp*\nIs that...\nHOPE?",
 	},
+	FeedCooldown: []string{
+		"I JUST ate!\nGive me a\nMOMENT!",
+		"My stomach\nNEEDS TIME!",
+	},
 	PlaySuccess: []string{
 		"GLORIOUS!\nSuch MAGNIFICENT\nplay!",
 		"THIS is what\nlife is FOR!",
@@ -138,6 +154,10 @@ var poolDramatic = &MessagePool{
 	PlayTun: []string{
 		"*silent tragedy*\nI cannot...",
 	},
+	PlayCooldown: []string{
+		"I am SPENT!\nLet me RECOVER!",
+		"Even LEGENDS\nneed REST!",
+	},
 	PetSuccess: []string{
 		"*SWOONS*\nSuch TENDERNESS!",
 		"My HEART!\nIt OVERFLOWS!",
@@ -153,6 +173,10 @@ var poolDramatic = &MessagePool{
 	},
 	PetTun: []string{
 		"*stirring*\nIs that...\nWARMTH?",
+	},
+	PetCooldown: []string{
+		"Too much!\nI am\nOVERWHELMED!",
+		"Let me SAVOR\nthe moment!",
 	},
 	Reviving: []string{
 		"I RETURN!\nFrom the BRINK\nof OBLIVION!",
@@ -204,6 +228,10 @@ var poolCheerful = &MessagePool{
 	FeedTun: []string{
 		"*happy twitch*\nYay... food...",
 	},
+	FeedCooldown: []string{
+		"Tummy's still\nprocessing!\nOne sec!",
+		"Ooh, still full\nfrom before!",
+	},
 	PlaySuccess: []string{
 		"Wheee!\nThis is SO fun!",
 		"Again! Again!\nI love this!",
@@ -220,6 +248,10 @@ var poolCheerful = &MessagePool{
 	PlayTun: []string{
 		"*tiny wiggle*\nMaybe soon...",
 	},
+	PlayCooldown: []string{
+		"Just catching\nmy breath!\nSo fun though!",
+		"Hehe, need a\nquick rest!",
+	},
 	PetSuccess: []string{
 		"*happy wiggle*\nI love pets!",
 		"Aww, you're\nso nice!",
@@ -235,6 +267,10 @@ var poolCheerful = &MessagePool{
 	},
 	PetTun: []string{
 		"*warming up*\nSo cozy...",
+	},
+	PetCooldown: []string{
+		"Hehe, that\ntickles! One\nmore second!",
+		"Still feeling\nthe warm fuzzies!",
 	},
 	Reviving: []string{
 		"I'm back!\nMissed you!",
@@ -286,6 +322,10 @@ var poolSassy = &MessagePool{
 	FeedTun: []string{
 		"*judging you\neven while\ndormant*",
 	},
+	FeedCooldown: []string{
+		"I JUST ate.\nChill.",
+		"Wow, eager\nmuch? Wait.",
+	},
 	PlaySuccess: []string{
 		"Fine, this is\nfun. I GUESS.",
 		"Don't let this\ngo to your head.",
@@ -302,6 +342,10 @@ var poolSassy = &MessagePool{
 	PlayTun: []string{
 		"*silently\njudging*",
 	},
+	PlayCooldown: []string{
+		"Tired. Give me\na minute,\ngeez.",
+		"I need to\nrecover. Duh.",
+	},
 	PetSuccess: []string{
 		"...fine.\nThat's nice.\nWhatever.",
 		"I'll allow it.\nThis time.",
@@ -317,6 +361,10 @@ var poolSassy = &MessagePool{
 	},
 	PetTun: []string{
 		"*warming*\n...appreciated.",
+	},
+	PetCooldown: []string{
+		"Personal space.\nEver heard\nof it?",
+		"Okay, okay.\nI get it.\nYou like me.",
 	},
 	Reviving: []string{
 		"I'm back.\nNo thanks to\nYOU.",
@@ -368,6 +416,10 @@ var poolShy = &MessagePool{
 	FeedTun: []string{
 		"*small twitch*\n...",
 	},
+	FeedCooldown: []string{
+		"...um...\nstill eating...",
+		"*tiny burp*\n...wait...",
+	},
 	PlaySuccess: []string{
 		"...this is\nnice...",
 		"*hesitant\nwiggle*",
@@ -384,6 +436,10 @@ var poolShy = &MessagePool{
 	PlayTun: []string{
 		"*still*\n...",
 	},
+	PlayCooldown: []string{
+		"...need a\nmoment...",
+		"*catching\nbreath*",
+	},
 	PetSuccess: []string{
 		"*blush*\n...oh.",
 		"...that's\nnice...",
@@ -399,6 +455,10 @@ var poolShy = &MessagePool{
 	},
 	PetTun: []string{
 		"*slowly\nuncurling*\n...warmth...",
+	},
+	PetCooldown: []string{
+		"*shy*\n...too much...",
+		"...okay...\none moment...",
 	},
 	Reviving: []string{
 		"...I'm okay.\n*tiny wave*",

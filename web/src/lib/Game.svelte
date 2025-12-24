@@ -9,12 +9,15 @@
   import Controls from './Controls.svelte';
   import DevTools from './DevTools.svelte';
 
-  onMount(() => {
+  let loading = $state(true);
+
+  onMount(async () => {
     if (USE_MOCK) {
       startDecay();
     } else {
-      startPolling();
+      await startPolling();
     }
+    loading = false;
   });
 
   onDestroy(() => {
@@ -26,6 +29,11 @@
   });
 </script>
 
+{#if loading}
+  <div class="game-container">
+    <div class="loading">Loading...</div>
+  </div>
+{:else}
 <div class="game-container">
   <div class="game-wrapper">
     <div class="game-canvas">
@@ -60,6 +68,7 @@
 
   <DevTools />
 </div>
+{/if}
 
 <style>
   .game-container {
@@ -124,5 +133,11 @@
   .controls-bar {
     display: flex;
     justify-content: center;
+  }
+
+  .loading {
+    color: rgba(74, 222, 128, 0.8);
+    font-family: monospace;
+    font-size: 14px;
   }
 </style>

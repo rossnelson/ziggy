@@ -4,6 +4,10 @@ import (
 	"ziggy/internal/temporal"
 )
 
-func Register() {
+func RegisterWorkflows() {
 	temporal.AddWorkflow("ZiggyWorkflow", ZiggyWorkflow)
+}
+
+func RegisterActivities(activities *Activities) {
+	temporal.AddActivity("RegeneratePool", activities.RegeneratePool)
 }

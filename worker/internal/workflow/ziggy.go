@@ -14,6 +14,8 @@ const (
 	SignalWake = "wake"
 
 	QueryState = "state"
+
+	PoolRegenerationInterval = 6 * time.Hour
 )
 
 type ZiggyInput struct {
@@ -44,13 +46,24 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		return err
 	}
 
+	regeneratePool := func(reason string) {
+		triggerPoolRegeneration(ctx, &state, logger, reason)
+	}
+
+	// Generate initial pool on startup
+	regeneratePool("startup")
+
 	feedCh := workflow.GetSignalChannel(ctx, SignalFeed)
 	playCh := workflow.GetSignalChannel(ctx, SignalPlay)
 	petCh := workflow.GetSignalChannel(ctx, SignalPet)
 	wakeCh := workflow.GetSignalChannel(ctx, SignalWake)
 
+	// Timer for periodic pool regeneration
+	timerFuture := workflow.NewTimer(ctx, PoolRegenerationInterval)
+
 	for {
 		selector := workflow.NewSelector(ctx)
+		prevPersonality := state.Personality
 
 		selector.AddReceive(feedCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
@@ -88,7 +101,19 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			state.LastUpdateTime = now
 		})
 
+		selector.AddFuture(timerFuture, func(f workflow.Future) {
+			logger.Info("Pool regeneration timer fired")
+			regeneratePool("scheduled")
+			timerFuture = workflow.NewTimer(ctx, PoolRegenerationInterval)
+		})
+
 		selector.Select(ctx)
+
+		// Check for personality change after interaction
+		if state.Personality != prevPersonality {
+			logger.Info("Personality changed", "from", prevPersonality, "to", state.Personality)
+			regeneratePool("personality_change")
+		}
 
 		if workflow.GetInfo(ctx).GetCurrentHistoryLength() > 10000 {
 			logger.Info("Continuing as new due to history length")
@@ -101,6 +126,33 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	}
 }
 
+func triggerPoolRegeneration(ctx workflow.Context, state *ZiggyState, logger interface{ Info(string, ...interface{}) }, reason string) {
+	logger.Info("Triggering pool regeneration", "reason", reason, "personality", state.Personality)
+
+	ao := workflow.ActivityOptions{
+		StartToCloseTimeout: 30 * time.Second,
+	}
+	actCtx := workflow.WithActivityOptions(ctx, ao)
+
+	age := workflow.Now(ctx).Sub(state.CreatedAt).Seconds()
+	input := PoolRegenerationInput{
+		Personality: state.Personality,
+		Stage:       GetStageForAge(age),
+		Bond:        state.Bond,
+	}
+
+	var output PoolRegenerationOutput
+	err := workflow.ExecuteActivity(actCtx, "RegeneratePool", input).Get(ctx, &output)
+	if err != nil {
+		logger.Info("Pool regeneration failed, using fallback", "error", err.Error())
+		return
+	}
+
+	state.RuntimePool = output.Pool
+	state.PoolGeneratedAt = output.GeneratedAt
+	logger.Info("Pool regenerated successfully")
+}
+
 func getPoolSelector(state *ZiggyState) *PoolSelector {
 	fallback := GetFallbackPool(state.Personality)
 	generic := GetFallbackPool(PersonalityStoic)
@@ -109,8 +161,18 @@ func getPoolSelector(state *ZiggyState) *PoolSelector {
 
 func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
 	pool := getPoolSelector(state)
+
+	// Check cooldown (shorter when hungry)
+	effectiveCooldown := state.GetEffectiveCooldown(ActionFeed)
+	if !state.LastFeedTime.IsZero() && now.Sub(state.LastFeedTime) < effectiveCooldown {
+		state.Message = pool.Pick("feedCooldown")
+		logger.Info("Feed on cooldown", "remaining", effectiveCooldown-now.Sub(state.LastFeedTime))
+		return
+	}
+
 	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
 	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+	state.LastFeedTime = now
 
 	// Tun state: feeding helps revival
 	if state.HP == 0 {
@@ -161,8 +223,18 @@ func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string,
 
 func handlePlay(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
 	pool := getPoolSelector(state)
+
+	// Check cooldown (shorter when unhappy)
+	effectiveCooldown := state.GetEffectiveCooldown(ActionPlay)
+	if !state.LastPlayTime.IsZero() && now.Sub(state.LastPlayTime) < effectiveCooldown {
+		state.Message = pool.Pick("playCooldown")
+		logger.Info("Play on cooldown", "remaining", effectiveCooldown-now.Sub(state.LastPlayTime))
+		return
+	}
+
 	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
 	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+	state.LastPlayTime = now
 
 	// Tun state: can't play
 	if state.HP == 0 {
@@ -201,8 +273,18 @@ func handlePlay(state *ZiggyState, now time.Time, logger interface{ Info(string,
 
 func handlePet(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
 	pool := getPoolSelector(state)
+
+	// Check cooldown (shorter when bond is low)
+	effectiveCooldown := state.GetEffectiveCooldown(ActionPet)
+	if !state.LastPetTime.IsZero() && now.Sub(state.LastPetTime) < effectiveCooldown {
+		state.Message = pool.Pick("petCooldown")
+		logger.Info("Pet on cooldown", "remaining", effectiveCooldown-now.Sub(state.LastPetTime))
+		return
+	}
+
 	state.CareMetrics.RecordInteraction(state.Fullness, state.Bond, now)
 	state.Personality = DerivePersonality(state.CareMetrics, state.Bond, now)
+	state.LastPetTime = now
 
 	// Tun state: petting helps revival through warmth/bond
 	if state.HP == 0 {

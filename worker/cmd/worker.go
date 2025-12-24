@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"ziggy/internal/ai"
 	"ziggy/internal/temporal"
 	"ziggy/internal/workflow"
 
@@ -47,7 +48,17 @@ func runWorker(cmd *cobra.Command, args []string) error {
 	defer registry.Shutdown()
 
 	// Register workflows and activities
-	workflow.Register()
+	workflow.RegisterWorkflows()
+
+	aiClient := ai.NewClient()
+	activities := workflow.NewActivities(aiClient)
+	workflow.RegisterActivities(activities)
+
+	if aiClient != nil {
+		fmt.Println("  AI: enabled")
+	} else {
+		fmt.Println("  AI: disabled (no ANTHROPIC_API_KEY)")
+	}
 
 	// Create context that cancels on interrupt
 	ctx, cancel := context.WithCancel(context.Background())

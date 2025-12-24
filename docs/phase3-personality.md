@@ -237,20 +237,20 @@ Return as JSON matching the MessagePool schema.
 ## Implementation Order
 
 ### Phase 3a: Personality System (no API yet)
-- [ ] Personality types (`personality.go`)
-- [ ] Care metrics in state (`state.go`)
-- [ ] Track care metrics on actions (`ziggy.go`)
-- [ ] Pool structure (`pool.go`)
-- [ ] Fallback pools per personality (`pools_fallback.go`)
-- [ ] Pool selection with fallback (`pool.go`)
-- [ ] Wire up pool selection (`ziggy.go`)
+- [x] Personality types (`personality.go`)
+- [x] Care metrics in state (`state.go`)
+- [x] Track care metrics on actions (`ziggy.go`)
+- [x] Pool structure (`pool.go`)
+- [x] Fallback pools per personality (`pools_fallback.go`)
+- [x] Pool selection with fallback (`pool.go`)
+- [x] Wire up pool selection (`ziggy.go`)
 
 ### Phase 3b: AI Integration
-- [ ] Claude API client (`internal/ai/client.go`)
-- [ ] Regeneration activity (`activities.go`)
-- [ ] Register activity (`register.go`)
-- [ ] Regeneration triggers (`ziggy.go`)
-- [ ] Environment config (`cmd/serve.go`)
+- [x] Claude API client (`internal/ai/client.go`)
+- [x] Regeneration activity (`activities.go`)
+- [x] Register activity (`register.go`)
+- [x] Regeneration triggers (`ziggy.go`)
+- [x] Environment config (via `os.Getenv("ANTHROPIC_API_KEY")` in ai/client.go)
 
 ## Decisions
 

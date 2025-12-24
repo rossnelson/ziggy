@@ -111,9 +111,9 @@ export async function healthCheck(): Promise<boolean> {
   return result.success;
 }
 
-export function startPolling() {
+export async function startPolling() {
   if (USE_MOCK || pollTimer) return;
-  getState();
+  await getState();
   pollTimer = setInterval(() => getState(), POLL_INTERVAL_MS);
 }
 
