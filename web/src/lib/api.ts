@@ -3,6 +3,7 @@ import {
   feed as mockFeed,
   play as mockPlay,
   pet as mockPet,
+  syncCooldownTimestamp,
   type ZiggyState,
 } from './store';
 import { get } from 'svelte/store';
@@ -28,6 +29,7 @@ interface ApiStateResponse {
 function syncStateFromApi(response: ApiStateResponse) {
   if (response.success && response.data) {
     ziggyState.set(response.data);
+    syncCooldownTimestamp();
   }
 }
 

@@ -78,6 +78,13 @@ const initialState: ZiggyState = {
 export const ziggyState = writable<ZiggyState>(initialState);
 export const cooldowns = writable<Cooldowns>({ feed: null, play: null, pet: null });
 
+// Track when cooldowns were last synced from API for local countdown
+let cooldownSyncedAt = 0;
+
+export function syncCooldownTimestamp() {
+  cooldownSyncedAt = Date.now();
+}
+
 let decayTimer: ReturnType<typeof setInterval> | null = null;
 let tickCount = 0;
 
@@ -315,7 +322,11 @@ export function getCooldownRemaining(action: Action): number {
       : action === 'play'
         ? state.playCooldown
         : state.petCooldown;
-  return Math.max(0, cooldownSeconds * 1000);
+
+  // Calculate remaining based on time elapsed since last API sync
+  const elapsedMs = Date.now() - cooldownSyncedAt;
+  const remainingMs = cooldownSeconds * 1000 - elapsedMs;
+  return Math.max(0, remainingMs);
 }
 
 export function feed(): boolean {
