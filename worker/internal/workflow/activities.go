@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"ziggy/internal/ai"
@@ -27,8 +28,12 @@ type PoolRegenerationOutput struct {
 }
 
 func (a *Activities) RegeneratePool(ctx context.Context, input PoolRegenerationInput) (*PoolRegenerationOutput, error) {
+	log.Printf("[RegeneratePool] Starting pool regeneration: personality=%s stage=%s bond=%.1f",
+		input.Personality, input.Stage, input.Bond)
+
 	// No AI client - return empty result, workflow will use fallback pools
 	if a.aiClient == nil {
+		log.Printf("[RegeneratePool] No AI client configured, using fallback pools")
 		return &PoolRegenerationOutput{
 			Pool:        nil,
 			GeneratedAt: time.Now(),
@@ -36,6 +41,7 @@ func (a *Activities) RegeneratePool(ctx context.Context, input PoolRegenerationI
 	}
 
 	bondDescription := getBondDescription(input.Bond)
+	log.Printf("[RegeneratePool] Calling Claude API with bond description: %s", bondDescription)
 
 	aiInput := ai.PoolGenerationInput{
 		Personality:     string(input.Personality),
@@ -45,6 +51,7 @@ func (a *Activities) RegeneratePool(ctx context.Context, input PoolRegenerationI
 
 	aiPool, err := a.aiClient.GeneratePool(ctx, aiInput)
 	if err != nil {
+		log.Printf("[RegeneratePool] Claude API error: %v", err)
 		// API error - return empty, use fallback pools
 		return &PoolRegenerationOutput{
 			Pool:        nil,
@@ -53,6 +60,8 @@ func (a *Activities) RegeneratePool(ctx context.Context, input PoolRegenerationI
 	}
 
 	pool := convertAIPool(aiPool)
+	log.Printf("[RegeneratePool] Successfully generated pool with %d feedSuccess messages",
+		len(pool.FeedSuccess))
 
 	return &PoolRegenerationOutput{
 		Pool:        pool,

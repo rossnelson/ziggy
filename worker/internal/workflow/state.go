@@ -218,17 +218,14 @@ func (s *ZiggyState) CalculateCurrentState(now time.Time) ZiggyState {
 	}
 
 	ticks := elapsed / DecayIntervalSeconds
-	currentTimeOfDay := GetTimeOfDay(now, s.Timezone)
-	shouldBeSleeping := currentTimeOfDay == TimeNight
 
 	if current.HP == 0 {
 		current.LastUpdateTime = now
 		return current
 	}
 
-	if shouldBeSleeping != s.Sleeping {
-		current.Sleeping = shouldBeSleeping
-	}
+	// Note: Sleep state is controlled by workflow signals (wake) and time-of-day
+	// transitions in the workflow loop, not overridden here
 
 	for i := 0.0; i < ticks; i++ {
 		current.applyDecayTick()

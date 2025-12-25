@@ -80,15 +80,6 @@
 </script>
 
 <div class="controls">
-  {#if isSleeping}
-    <button class="action-btn wake" onclick={handleWake}>
-      <span class="icon">☀️</span>
-      <span class="label">Wake</span>
-      <span class="shortcut">W</span>
-      <span class="penalty">-10 HAP</span>
-    </button>
-  {/if}
-
   <button
     class="action-btn feed"
     class:warning={isFull && !isSleeping}
@@ -128,13 +119,24 @@
       <span class="cooldown">{formatCooldown(petCooldown)}</span>
     {/if}
   </button>
+
+  {#if isSleeping}
+    <button class="action-btn wake" onclick={handleWake}>
+      <span class="icon">☀️</span>
+      <span class="label">Wake</span>
+      <span class="shortcut">W</span>
+      {#if isSleeping}
+        <span class="penalty">-10 HAP</span>
+      {/if}
+    </button>
+  {/if}
 </div>
 
 <style>
   .controls {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    justify-content: center;
   }
 
   .action-btn {
@@ -192,9 +194,9 @@
 
   .cooldown {
     position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: -28px;
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 9px;
     color: #f59e0b;
     white-space: nowrap;
@@ -223,9 +225,9 @@
 
   .warning-text {
     position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: -32px;
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 8px;
     color: #ef4444;
     font-weight: bold;
@@ -233,9 +235,9 @@
 
   .sleep-text {
     position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: -24px;
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 10px;
   }
 
@@ -251,9 +253,9 @@
 
   .penalty {
     position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: -48px;
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 8px;
     color: #ef4444;
     white-space: nowrap;

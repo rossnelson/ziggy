@@ -34,40 +34,40 @@
     <div class="loading">Loading...</div>
   </div>
 {:else}
-<div class="game-container">
-  <div class="game-wrapper">
-    <div class="game-canvas">
-      <Background timeOfDay={$ziggyState.timeOfDay} />
+  <div class="game-container">
+    <div class="game-wrapper">
+      <div class="controls-bar">
+        <Controls />
+      </div>
 
-      <div class="game-content">
-        <div class="top-bar">
-          <Stats
-            fullness={$ziggyState.fullness}
-            happiness={$ziggyState.happiness}
-            bond={$ziggyState.bond}
-            hp={$ziggyState.hp}
-          />
-        </div>
+      <div class="game-canvas">
+        <Background timeOfDay={$ziggyState.timeOfDay} />
 
-        <div class="main-area">
-          <div class="message-area">
-            <Message message={$ziggyState.message} />
+        <div class="game-content">
+          <div class="top-bar">
+            <Stats
+              fullness={$ziggyState.fullness}
+              happiness={$ziggyState.happiness}
+              bond={$ziggyState.bond}
+              hp={$ziggyState.hp}
+            />
           </div>
-        </div>
 
-        <div class="ziggy-area">
-          <Ziggy mood={$mood} stage={$ziggyState.stage} />
+          <div class="main-area">
+            <div class="message-area">
+              <Message message={$ziggyState.message} />
+            </div>
+          </div>
+
+          <div class="ziggy-area">
+            <Ziggy mood={$mood} stage={$ziggyState.stage} />
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="controls-bar">
-      <Controls />
-    </div>
+    <DevTools />
   </div>
-
-  <DevTools />
-</div>
 {/if}
 
 <style>
@@ -82,18 +82,19 @@
 
   .game-wrapper {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 12px;
+    align-items: flex-start;
   }
 
   .game-canvas {
     position: relative;
     width: 240px;
     height: 240px;
-    border-radius: 12px;
+    border: 2px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
     overflow: hidden;
     box-shadow:
-      0 0 0 4px rgba(74, 222, 128, 0.2),
       0 0 30px rgba(74, 222, 128, 0.1),
       0 10px 40px rgba(0, 0, 0, 0.5);
   }
@@ -132,6 +133,7 @@
 
   .controls-bar {
     display: flex;
+    flex-direction: column;
     justify-content: center;
   }
 

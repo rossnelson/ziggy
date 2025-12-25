@@ -16,6 +16,7 @@ const (
 	QueryState = "state"
 
 	PoolRegenerationInterval = 6 * time.Hour
+	PoolRegenerationCooldown = 10 * time.Minute // Minimum time between regenerations
 )
 
 type ZiggyInput struct {
@@ -58,12 +59,14 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	petCh := workflow.GetSignalChannel(ctx, SignalPet)
 	wakeCh := workflow.GetSignalChannel(ctx, SignalWake)
 
-	// Timer for periodic pool regeneration
+	// Timer for periodic pool regeneration (6 hours)
+	logger.Info("Starting pool regeneration timer", "interval", PoolRegenerationInterval)
 	timerFuture := workflow.NewTimer(ctx, PoolRegenerationInterval)
 
 	for {
 		selector := workflow.NewSelector(ctx)
 		prevPersonality := state.Personality
+		prevStage := GetStageForAge(workflow.Now(ctx).Sub(state.CreatedAt).Seconds())
 
 		selector.AddReceive(feedCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal struct{}
@@ -102,7 +105,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		})
 
 		selector.AddFuture(timerFuture, func(f workflow.Future) {
-			logger.Info("Pool regeneration timer fired")
+			logger.Info("Pool regeneration timer fired, regenerating and restarting timer", "interval", PoolRegenerationInterval)
 			regeneratePool("scheduled")
 			timerFuture = workflow.NewTimer(ctx, PoolRegenerationInterval)
 		})
@@ -113,6 +116,13 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		if state.Personality != prevPersonality {
 			logger.Info("Personality changed", "from", prevPersonality, "to", state.Personality)
 			regeneratePool("personality_change")
+		}
+
+		// Check for stage change (evolution)
+		currentStage := GetStageForAge(workflow.Now(ctx).Sub(state.CreatedAt).Seconds())
+		if currentStage != prevStage {
+			logger.Info("Stage changed", "from", prevStage, "to", currentStage)
+			regeneratePool("stage_change")
 		}
 
 		if workflow.GetInfo(ctx).GetCurrentHistoryLength() > 10000 {
@@ -127,30 +137,44 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 }
 
 func triggerPoolRegeneration(ctx workflow.Context, state *ZiggyState, logger interface{ Info(string, ...interface{}) }, reason string) {
-	logger.Info("Triggering pool regeneration", "reason", reason, "personality", state.Personality)
+	now := workflow.Now(ctx)
+
+	// Skip if we regenerated recently (unless it's startup with no pool yet)
+	if !state.PoolGeneratedAt.IsZero() && now.Sub(state.PoolGeneratedAt) < PoolRegenerationCooldown {
+		logger.Info("Skipping pool regeneration (cooldown)", "reason", reason, "lastGenerated", state.PoolGeneratedAt)
+		return
+	}
+
+	logger.Info("Triggering pool regeneration (async)", "reason", reason, "personality", state.Personality)
 
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 30 * time.Second,
+		StartToCloseTimeout: 2 * time.Minute,
 	}
 	actCtx := workflow.WithActivityOptions(ctx, ao)
 
-	age := workflow.Now(ctx).Sub(state.CreatedAt).Seconds()
+	age := now.Sub(state.CreatedAt).Seconds()
 	input := PoolRegenerationInput{
 		Personality: state.Personality,
 		Stage:       GetStageForAge(age),
 		Bond:        state.Bond,
 	}
 
-	var output PoolRegenerationOutput
-	err := workflow.ExecuteActivity(actCtx, "RegeneratePool", input).Get(ctx, &output)
-	if err != nil {
-		logger.Info("Pool regeneration failed, using fallback", "error", err.Error())
-		return
-	}
+	// Mark as generating to prevent concurrent regenerations
+	state.PoolGeneratedAt = now
 
-	state.RuntimePool = output.Pool
-	state.PoolGeneratedAt = output.GeneratedAt
-	logger.Info("Pool regenerated successfully")
+	// Run async so we don't block signal processing
+	workflow.Go(ctx, func(ctx workflow.Context) {
+		var output PoolRegenerationOutput
+		err := workflow.ExecuteActivity(actCtx, "RegeneratePool", input).Get(ctx, &output)
+		if err != nil {
+			logger.Info("Pool regeneration failed, using fallback", "error", err.Error())
+			return
+		}
+
+		state.RuntimePool = output.Pool
+		state.PoolGeneratedAt = output.GeneratedAt
+		logger.Info("Pool regenerated successfully")
+	})
 }
 
 func getPoolSelector(state *ZiggyState) *PoolSelector {

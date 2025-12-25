@@ -23,7 +23,7 @@
     background: rgba(255, 255, 255, 0.95);
     border-radius: 8px;
     padding: 8px 12px;
-    max-width: 180px;
+    max-width: 220px;
     min-height: 48px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
@@ -40,7 +40,7 @@
 
   .line {
     display: block;
-    max-width: 20ch;
+    max-width: 28ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

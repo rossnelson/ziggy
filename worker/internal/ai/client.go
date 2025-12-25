@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -65,11 +66,16 @@ type MessagePool struct {
 }
 
 func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*MessagePool, error) {
+	log.Printf("[AI] GeneratePool called: personality=%s stage=%s bond=%s",
+		input.Personality, input.Stage, input.BondDescription)
+
 	if c == nil {
+		log.Printf("[AI] Client is nil - missing ANTHROPIC_API_KEY")
 		return nil, fmt.Errorf("AI client not initialized (missing ANTHROPIC_API_KEY)")
 	}
 
 	prompt := buildPrompt(input)
+	log.Printf("[AI] Sending request to Claude API (prompt length: %d chars)", len(prompt))
 
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.ModelClaude3_5Haiku20241022,
@@ -79,29 +85,48 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 		},
 	})
 	if err != nil {
+		log.Printf("[AI] Claude API request failed: %v", err)
 		return nil, fmt.Errorf("claude API error: %w", err)
 	}
 
+	log.Printf("[AI] Received response from Claude (content blocks: %d)", len(message.Content))
+
 	if len(message.Content) == 0 {
+		log.Printf("[AI] Empty response from Claude")
 		return nil, fmt.Errorf("empty response from claude")
 	}
 
 	text := message.Content[0].Text
 	if text == "" {
+		log.Printf("[AI] Empty text in response")
 		return nil, fmt.Errorf("empty text in response from claude")
 	}
 
+	log.Printf("[AI] Response text length: %d chars", len(text))
+
 	jsonStr := extractJSON(text)
 	if jsonStr == "" {
+		log.Printf("[AI] No JSON found in response. First 500 chars: %s", truncate(text, 500))
 		return nil, fmt.Errorf("no JSON found in response")
 	}
 
+	log.Printf("[AI] Extracted JSON length: %d chars", len(jsonStr))
+
 	var pool MessagePool
 	if err := json.Unmarshal([]byte(jsonStr), &pool); err != nil {
+		log.Printf("[AI] JSON parse error: %v. First 500 chars of JSON: %s", err, truncate(jsonStr, 500))
 		return nil, fmt.Errorf("failed to parse pool JSON: %w", err)
 	}
 
+	log.Printf("[AI] Successfully parsed pool")
 	return &pool, nil
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
 
 func buildPrompt(input PoolGenerationInput) string {
