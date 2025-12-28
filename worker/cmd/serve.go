@@ -41,6 +41,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		owner = "dev"
 	}
 	workflowID := fmt.Sprintf("ziggy-%s", owner)
+	chatWorkflowID := fmt.Sprintf("ziggy-chat-%s", owner)
 
 	fmt.Printf("Starting Ziggy API server...\n")
 	fmt.Printf("  Address: %s\n", address)
@@ -64,7 +65,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start the workflow if requested
+	// Start the workflows if requested
 	if startWorkflow {
 		_, err := registry.ExecuteWorkflow(ctx, workflowID, workflow.ZiggyWorkflow, workflow.ZiggyInput{
 			Owner:      owner,
@@ -72,10 +73,19 @@ func runServe(cmd *cobra.Command, args []string) error {
 			Generation: 1,
 		})
 		if err != nil {
-			// Workflow might already be running, which is fine
 			fmt.Printf("Note: %v (workflow may already be running)\n", err)
 		} else {
 			fmt.Printf("Started new Ziggy workflow: %s\n", workflowID)
+		}
+
+		_, err = registry.ExecuteWorkflow(ctx, chatWorkflowID, workflow.ChatWorkflow, workflow.ChatInput{
+			Owner:   owner,
+			ZiggyID: workflowID,
+		})
+		if err != nil {
+			fmt.Printf("Note: %v (chat workflow may already be running)\n", err)
+		} else {
+			fmt.Printf("Started new Chat workflow: %s\n", chatWorkflowID)
 		}
 	}
 
@@ -89,6 +99,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Start the API server
-	server := api.NewServer(registry, workflowID, port)
+	server := api.NewServer(registry, workflowID, chatWorkflowID, port)
 	return server.Start(ctx)
 }

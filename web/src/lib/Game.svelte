@@ -1,31 +1,23 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { ziggyState, mood, startDecay, stopDecay } from './store';
-  import { startPolling, stopPolling, USE_MOCK } from './api';
+  import { ziggyState, mood } from './store';
+  import { startSSE, stopSSE } from './api';
   import Background from './Background.svelte';
   import Ziggy from './Ziggy.svelte';
   import Stats from './Stats.svelte';
   import Message from './Message.svelte';
   import Controls from './Controls.svelte';
-  import DevTools from './DevTools.svelte';
+  import Chat from './Chat.svelte';
 
   let loading = $state(true);
 
   onMount(async () => {
-    if (USE_MOCK) {
-      startDecay();
-    } else {
-      await startPolling();
-    }
+    startSSE();
     loading = false;
   });
 
   onDestroy(() => {
-    if (USE_MOCK) {
-      stopDecay();
-    } else {
-      stopPolling();
-    }
+    stopSSE();
   });
 </script>
 
@@ -64,9 +56,11 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <DevTools />
+      <div class="chat-bar">
+        <Chat />
+      </div>
+    </div>
   </div>
 {/if}
 
@@ -135,6 +129,12 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .chat-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .loading {

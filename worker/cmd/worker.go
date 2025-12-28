@@ -54,6 +54,9 @@ func runWorker(cmd *cobra.Command, args []string) error {
 	activities := workflow.NewActivities(aiClient)
 	workflow.RegisterActivities(activities)
 
+	chatActivities := workflow.NewChatActivities(aiClient, registry)
+	workflow.RegisterChatActivities(chatActivities)
+
 	if aiClient != nil {
 		fmt.Println("  AI: enabled")
 	} else {

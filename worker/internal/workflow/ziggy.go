@@ -20,9 +20,10 @@ const (
 )
 
 type ZiggyInput struct {
-	Owner      string `json:"owner"`
-	Timezone   string `json:"timezone"`
-	Generation int    `json:"generation"`
+	Owner      string    `json:"owner"`
+	Timezone   string    `json:"timezone"`
+	Generation int       `json:"generation"`
+	CreatedAt  time.Time `json:"createdAt,omitempty"` // Original birth time, preserved across continue-as-new
 }
 
 func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
@@ -38,6 +39,10 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	state.Generation = input.Generation
 	if state.Generation == 0 {
 		state.Generation = 1
+	}
+	// Preserve original birth time across continue-as-new
+	if !input.CreatedAt.IsZero() {
+		state.CreatedAt = input.CreatedAt
 	}
 
 	err := workflow.SetQueryHandler(ctx, QueryState, func() (ZiggyState, error) {
@@ -122,6 +127,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		currentStage := GetStageForAge(workflow.Now(ctx).Sub(state.CreatedAt).Seconds())
 		if currentStage != prevStage {
 			logger.Info("Stage changed", "from", prevStage, "to", currentStage)
+			state.Stage = currentStage // Update stored stage
 			regeneratePool("stage_change")
 		}
 
@@ -131,6 +137,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 				Owner:      input.Owner,
 				Timezone:   input.Timezone,
 				Generation: state.Generation + 1,
+				CreatedAt:  state.CreatedAt, // Preserve birth time
 			})
 		}
 	}

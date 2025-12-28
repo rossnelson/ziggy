@@ -1,18 +1,14 @@
-import {
-  ziggyState,
-  feed as mockFeed,
-  play as mockPlay,
-  pet as mockPet,
-  syncCooldownTimestamp,
-  type ZiggyState,
-} from './store';
-import { get } from 'svelte/store';
+import { writable } from 'svelte/store';
+import { ziggyState, syncCooldownTimestamp, type ZiggyState } from './store';
 
-export const USE_MOCK = false;
 const API_BASE = 'http://localhost:8080';
-const POLL_INTERVAL_MS = 2000;
 
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let eventSource: EventSource | null = null;
+
+// Chat stores for SSE updates
+export const chatMessages = writable<ChatMessage[]>([]);
+export const chatLoading = writable(false);
+export const mysteryStatus = writable<MysteryStatus | null>(null);
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -58,70 +54,141 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<Api
 }
 
 export async function getState(): Promise<ApiResponse<ZiggyState>> {
-  if (USE_MOCK) {
-    return { success: true, data: get(ziggyState) };
-  }
   const result = await fetchApi<ZiggyState>('/api/state');
   syncStateFromApi(result);
   return result;
 }
 
 export async function sendFeed(): Promise<ApiResponse<ZiggyState>> {
-  if (USE_MOCK) {
-    mockFeed();
-    return { success: true, data: get(ziggyState) };
-  }
   const result = await fetchApi<ZiggyState>('/api/signal/feed', { method: 'POST' });
   syncStateFromApi(result);
   return result;
 }
 
 export async function sendPlay(): Promise<ApiResponse<ZiggyState>> {
-  if (USE_MOCK) {
-    mockPlay();
-    return { success: true, data: get(ziggyState) };
-  }
   const result = await fetchApi<ZiggyState>('/api/signal/play', { method: 'POST' });
   syncStateFromApi(result);
   return result;
 }
 
 export async function sendPet(): Promise<ApiResponse<ZiggyState>> {
-  if (USE_MOCK) {
-    mockPet();
-    return { success: true, data: get(ziggyState) };
-  }
   const result = await fetchApi<ZiggyState>('/api/signal/pet', { method: 'POST' });
   syncStateFromApi(result);
   return result;
 }
 
 export async function sendWake(): Promise<ApiResponse<ZiggyState>> {
-  if (USE_MOCK) {
-    const { wake } = await import('./store');
-    wake();
-    return { success: true, data: get(ziggyState) };
-  }
   const result = await fetchApi<ZiggyState>('/api/signal/wake', { method: 'POST' });
   syncStateFromApi(result);
   return result;
 }
 
 export async function healthCheck(): Promise<boolean> {
-  if (USE_MOCK) return true;
   const result = await fetchApi('/api/health');
   return result.success;
 }
 
-export async function startPolling() {
-  if (USE_MOCK || pollTimer) return;
-  await getState();
-  pollTimer = setInterval(() => getState(), POLL_INTERVAL_MS);
+interface ChatHistoryResponse {
+  messages: ChatMessage[];
+  mysteryStatus?: MysteryStatus;
 }
 
-export function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
+interface SSEEvent {
+  type: 'state' | 'chat';
+  data: ZiggyState | ChatHistoryResponse;
+}
+
+export function startSSE() {
+  if (eventSource) return;
+
+  eventSource = new EventSource(`${API_BASE}/api/events`);
+
+  eventSource.onmessage = (event) => {
+    try {
+      const parsed: SSEEvent = JSON.parse(event.data);
+
+      if (parsed.type === 'state') {
+        ziggyState.set(parsed.data as ZiggyState);
+        syncCooldownTimestamp();
+      } else if (parsed.type === 'chat') {
+        const chatData = parsed.data as ChatHistoryResponse;
+        console.log('Chat SSE:', chatData);
+        chatMessages.set(chatData.messages ?? []);
+        mysteryStatus.set(chatData.mysteryStatus ?? null);
+      }
+    } catch (err) {
+      console.error('SSE parse error:', err);
+    }
+  };
+
+  eventSource.onerror = () => {
+    console.error('SSE connection error, reconnecting...');
+    stopSSE();
+    setTimeout(startSSE, 2000);
+  };
+}
+
+export function stopSSE() {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
   }
+}
+
+// Chat types
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'ziggy';
+  content: string;
+  timestamp: string;
+}
+
+export interface ChatHistory {
+  messages: ChatMessage[];
+  activeMystery?: Mystery;
+  mysteryProgress: number;
+}
+
+export interface Mystery {
+  id: string;
+  title: string;
+  description: string;
+  track: string;
+  concept?: string;
+  hints: string[];
+}
+
+export interface MysteryStatus {
+  active: boolean;
+  mystery?: Mystery;
+  progress: number;
+  hintsGiven: string[];
+  totalHints: number;
+}
+
+// Chat API functions
+export async function getChatHistory(): Promise<ApiResponse<ChatHistory>> {
+  return fetchApi<ChatHistory>('/api/chat/history');
+}
+
+export async function sendChatMessage(content: string): Promise<ApiResponse<ChatHistory>> {
+  return fetchApi<ChatHistory>('/api/chat/message', {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function getMysteryStatus(): Promise<ApiResponse<MysteryStatus>> {
+  return fetchApi<MysteryStatus>('/api/chat/mystery');
+}
+
+export async function startMystery(mysteryId: string): Promise<ApiResponse<void>> {
+  return fetchApi<void>('/api/chat/mystery/start', {
+    method: 'POST',
+    body: JSON.stringify({ mysteryId }),
+  });
+}
+
+export async function getAvailableMysteries(track: string = 'fun'): Promise<ApiResponse<Mystery[]>> {
+  return fetchApi<Mystery[]>(`/api/chat/mysteries?track=${track}`);
 }

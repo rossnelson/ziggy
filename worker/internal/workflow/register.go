@@ -6,8 +6,14 @@ import (
 
 func RegisterWorkflows() {
 	temporal.AddWorkflow("ZiggyWorkflow", ZiggyWorkflow)
+	temporal.AddWorkflow("ChatWorkflow", ChatWorkflow)
 }
 
 func RegisterActivities(activities *Activities) {
 	temporal.AddActivity("RegeneratePool", activities.RegeneratePool)
+}
+
+func RegisterChatActivities(activities *ChatActivities) {
+	temporal.AddActivity("GenerateChatResponse", activities.GenerateChatResponse)
+	temporal.AddActivity("QueryZiggyState", activities.QueryZiggyState)
 }

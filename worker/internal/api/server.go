@@ -12,16 +12,18 @@ import (
 )
 
 type Server struct {
-	registry   *temporal.Registry
-	workflowID string
-	port       int
+	registry       *temporal.Registry
+	workflowID     string
+	chatWorkflowID string
+	port           int
 }
 
-func NewServer(registry *temporal.Registry, workflowID string, port int) *Server {
+func NewServer(registry *temporal.Registry, workflowID string, chatWorkflowID string, port int) *Server {
 	return &Server{
-		registry:   registry,
-		workflowID: workflowID,
-		port:       port,
+		registry:       registry,
+		workflowID:     workflowID,
+		chatWorkflowID: chatWorkflowID,
+		port:           port,
 	}
 }
 
@@ -35,6 +37,16 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("POST /api/signal/pet", s.handlePet)
 	mux.HandleFunc("POST /api/signal/wake", s.handleWake)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+
+	// Chat routes
+	mux.HandleFunc("GET /api/chat/history", s.handleGetChatHistory)
+	mux.HandleFunc("POST /api/chat/message", s.handleSendMessage)
+	mux.HandleFunc("GET /api/chat/mystery", s.handleGetMysteryStatus)
+	mux.HandleFunc("POST /api/chat/mystery/start", s.handleStartMystery)
+	mux.HandleFunc("GET /api/chat/mysteries", s.handleGetMysteries)
+
+	// SSE stream
+	mux.HandleFunc("GET /api/events", s.handleSSE)
 
 	// CORS middleware
 	handler := corsMiddleware(mux)
