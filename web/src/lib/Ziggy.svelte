@@ -54,22 +54,19 @@
 </script>
 
 <div
-  class="ziggy {animationClass}"
+  class="ziggy w-16 h-16 bg-no-repeat {animationClass}"
   class:grayscale={mood === 'tun'}
   style:--sprite-x="-{pos.col * SPRITE_WIDTH}px"
   style:--sprite-y="-{pos.row * SPRITE_HEIGHT}px"
   style:--scale={scale}
+  style:background-image="url('/assets/sprite.png')"
+  style:image-rendering="pixelated"
 ></div>
 
 <style>
   .ziggy {
-    width: 64px;
-    height: 64px;
-    background-image: url('/assets/sprite.png');
     background-position: var(--sprite-x) var(--sprite-y);
     background-size: calc(64px * 3) calc(64px * 4);
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
     transform: scale(var(--scale, 1));
   }
 
@@ -82,13 +79,8 @@
   }
 
   @keyframes bounce {
-    0%,
-    100% {
-      transform: scale(var(--scale, 1)) translateY(0);
-    }
-    50% {
-      transform: scale(var(--scale, 1)) translateY(-5px);
-    }
+    0%, 100% { transform: scale(var(--scale, 1)) translateY(0); }
+    50% { transform: scale(var(--scale, 1)) translateY(-5px); }
   }
 
   .sleep {
@@ -96,13 +88,8 @@
   }
 
   @keyframes sleep-bob {
-    0%,
-    100% {
-      transform: scale(var(--scale, 1)) rotate(0deg);
-    }
-    50% {
-      transform: scale(var(--scale, 1)) rotate(2deg);
-    }
+    0%, 100% { transform: scale(var(--scale, 1)) rotate(0deg); }
+    50% { transform: scale(var(--scale, 1)) rotate(2deg); }
   }
 
   .droop {
@@ -110,13 +97,8 @@
   }
 
   @keyframes droop {
-    0%,
-    100% {
-      transform: scale(var(--scale, 1)) translateY(0);
-    }
-    50% {
-      transform: scale(var(--scale, 1)) translateY(3px);
-    }
+    0%, 100% { transform: scale(var(--scale, 1)) translateY(0); }
+    50% { transform: scale(var(--scale, 1)) translateY(3px); }
   }
 
   .curled {
@@ -128,15 +110,8 @@
   }
 
   @keyframes idle-sway {
-    0%,
-    100% {
-      transform: scale(var(--scale, 1)) rotate(0deg);
-    }
-    25% {
-      transform: scale(var(--scale, 1)) rotate(-1deg);
-    }
-    75% {
-      transform: scale(var(--scale, 1)) rotate(1deg);
-    }
+    0%, 100% { transform: scale(var(--scale, 1)) rotate(0deg); }
+    25% { transform: scale(var(--scale, 1)) rotate(-1deg); }
+    75% { transform: scale(var(--scale, 1)) rotate(1deg); }
   }
 </style>

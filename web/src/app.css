@@ -1,53 +1,14 @@
-:root {
-  --color-deep-purple: #1a1a2e;
-  --color-dark-purple: #2d1b4e;
-  --color-teal: #4ade80;
-  --color-pink: #ec4899;
-  --color-bg: #0a0a12;
-  --color-text: #d0d0e0;
-  --color-text-muted: #a0a0b0;
+@import "tailwindcss";
 
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* Custom theme configuration for Ziggy */
+@theme {
+  --color-ziggy-green: #4ade80;
+  --color-ziggy-purple: #a855f7;
+  --color-ziggy-dark: #0a0a12;
+  --color-ziggy-panel: rgba(26, 26, 46, 0.95);
+  --color-ziggy-border: rgba(74, 222, 128, 0.3);
+  --color-ziggy-text: #e0e0e0;
+  --color-ziggy-muted: #a0a0b0;
 
-  color-scheme: dark;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-#app {
-  width: 100%;
-  min-height: 100vh;
-}
-
-button {
-  font-family: inherit;
-}
-
-::selection {
-  background: var(--color-teal);
-  color: var(--color-deep-purple);
+  --font-family-mono: monospace;
 }

@@ -64,6 +64,12 @@ type MessagePool struct {
 	IdleCritical []string `json:"idleCritical"`
 	IdleTun      []string `json:"idleTun"`
 	IdleSleeping []string `json:"idleSleeping"`
+
+	// Need-based coaxing messages
+	NeedsFood      []string `json:"needsFood"`
+	NeedsPlay      []string `json:"needsPlay"`
+	NeedsAffection []string `json:"needsAffection"`
+	NeedsCritical  []string `json:"needsCritical"`
 }
 
 func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*MessagePool, error) {
@@ -167,6 +173,10 @@ Categories:
 - idleCritical: Idle dialogue when HP is critical
 - idleTun: Idle dialogue when dormant
 - idleSleeping: Idle dialogue when sleeping
+- needsFood: Coaxing messages when hungry (gently ask for food)
+- needsPlay: Coaxing messages when bored (gently ask for play)
+- needsAffection: Coaxing messages when lonely (gently ask for pets)
+- needsCritical: Urgent messages when HP is low (plead for help)
 
 Rules:
 - Never use emoji

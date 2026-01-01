@@ -118,5 +118,10 @@ func convertAIPool(aiPool *ai.MessagePool) *MessagePool {
 		IdleCritical: aiPool.IdleCritical,
 		IdleTun:      aiPool.IdleTun,
 		IdleSleeping: aiPool.IdleSleeping,
+
+		NeedsFood:      aiPool.NeedsFood,
+		NeedsPlay:      aiPool.NeedsPlay,
+		NeedsAffection: aiPool.NeedsAffection,
+		NeedsCritical:  aiPool.NeedsCritical,
 	}
 }

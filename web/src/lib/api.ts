@@ -112,7 +112,6 @@ export function startSSE() {
         syncCooldownTimestamp();
       } else if (parsed.type === 'chat') {
         const chatData = parsed.data as ChatHistoryResponse;
-        console.log('Chat SSE:', chatData);
         chatMessages.set(chatData.messages ?? []);
         mysteryStatus.set(chatData.mysteryStatus ?? null);
       }

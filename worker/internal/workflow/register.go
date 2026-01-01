@@ -7,6 +7,7 @@ import (
 func RegisterWorkflows() {
 	temporal.AddWorkflow("ZiggyWorkflow", ZiggyWorkflow)
 	temporal.AddWorkflow("ChatWorkflow", ChatWorkflow)
+	temporal.AddWorkflow("NeedUpdaterWorkflow", NeedUpdaterWorkflow)
 }
 
 func RegisterActivities(activities *Activities) {

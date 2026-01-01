@@ -77,53 +77,61 @@
   });
 </script>
 
-<div class="chat-panel">
-  <div class="chat-header">
+<div class="hidden sm:flex w-[280px] h-60 bg-[rgba(26,26,46,0.95)] border-2 border-green-400/30 rounded-lg flex-col overflow-hidden relative">
+  <div class="flex justify-between items-center px-3 py-2 border-b border-green-400/20 text-green-400 font-mono text-[11px] font-bold shrink-0">
     <span>Chat with Ziggy</span>
-    <button class="mystery-btn" onclick={() => (showMysteries = !showMysteries)}>
+    <button
+      class="bg-green-400/10 border border-green-400/30 rounded px-2 py-1 text-green-400 font-mono text-[9px] cursor-pointer hover:bg-green-400/20"
+      onclick={() => (showMysteries = !showMysteries)}
+    >
       {showMysteries ? 'Hide' : 'Mysteries'}
     </button>
   </div>
 
   {#if mystery?.active}
-    <div class="mystery-progress">
-      <span class="mystery-label">{mystery.mystery?.title}</span>
-      <div class="progress-bar">
+    <div class="flex items-center gap-2 px-3 py-2 bg-purple-500/10 border-b border-purple-500/20 shrink-0">
+      <span class="font-mono text-[9px] font-bold text-purple-500 whitespace-nowrap">{mystery.mystery?.title}</span>
+      <div class="flex-1 h-1.5 bg-black/30 rounded-sm overflow-hidden">
         <div
-          class="progress-fill"
+          class="h-full bg-gradient-to-r from-purple-500 to-green-400 rounded-sm transition-all duration-300"
           style="width: {(mystery.progress / mystery.totalHints) * 100}%"
         ></div>
       </div>
-      <span class="progress-text">{mystery.progress}/{mystery.totalHints} hints</span>
+      <span class="font-mono text-[8px] text-[#a0a0b0] whitespace-nowrap">{mystery.progress}/{mystery.totalHints} hints</span>
     </div>
   {:else if showMysteries}
-    <div class="mysteries-list">
+    <div class="absolute top-[30px] left-3 right-3 max-h-[200px] overflow-y-auto bg-[#1a1a2c] border border-green-400/20 rounded z-10">
       {#each mysteries as m}
-        <button class="mystery-item" onclick={() => handleStartMystery(m)}>
-          <span class="mystery-title">{m.title}</span>
-          <span class="mystery-desc">{m.description}</span>
+        <button
+          class="flex flex-col w-full px-3 py-2 bg-transparent border-none border-b border-green-400/10 text-[#d0d0e0] font-mono text-left cursor-pointer hover:bg-green-400/10"
+          onclick={() => handleStartMystery(m)}
+        >
+          <span class="text-[10px] font-bold text-green-400">{m.title}</span>
+          <span class="text-[9px] text-[#a0a0b0] mt-0.5">{m.description}</span>
         </button>
       {/each}
       {#if mysteries.length === 0}
-        <div class="no-mysteries">No mysteries available</div>
+        <div class="p-3 text-center text-[#a0a0b0] text-[10px] font-mono">No mysteries available</div>
       {/if}
     </div>
   {/if}
 
-  <div class="messages" bind:this={messagesContainer}>
+  <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5" bind:this={messagesContainer}>
     {#each messages as message}
-      <div class="message {message.role}">
-        <span class="role">{message.role === 'user' ? 'You' : 'Ziggy'}</span>
-        <span class="content">{message.content}</span>
+      <div class="flex flex-col gap-0.5 px-2 py-1.5 rounded-md font-mono text-[10px] max-w-[85%] {message.role === 'user' ? 'bg-green-400/15 self-end' : 'bg-purple-600/15 self-start'}">
+        <span class="text-[8px] font-bold uppercase {message.role === 'user' ? 'text-green-400' : 'text-purple-500'}">
+          {message.role === 'user' ? 'You' : 'Ziggy'}
+        </span>
+        <span class="text-[#e0e0e0] break-words whitespace-pre-wrap">{message.content}</span>
       </div>
     {/each}
     {#if messages.length === 0 && !isLoading}
-      <div class="empty-chat">Say hi to Ziggy!</div>
+      <div class="text-center text-[#a0a0b0] font-mono text-[10px] py-5">Say hi to Ziggy!</div>
     {/if}
     {#if isLoading}
-      <div class="message ziggy loading">
-        <span class="role">Ziggy</span>
-        <span class="content typing">
+      <div class="flex flex-col gap-0.5 px-2 py-1.5 rounded-md font-mono text-[10px] bg-purple-600/15 self-start max-w-[85%]">
+        <span class="text-[8px] font-bold uppercase text-purple-500">Ziggy</span>
+        <span class="typing">
           <span class="dot"></span>
           <span class="dot"></span>
           <span class="dot"></span>
@@ -132,204 +140,26 @@
     {/if}
   </div>
 
-  <div class="input-area">
+  <div class="flex gap-1.5 p-2 border-t border-green-400/20 shrink-0">
     <input
       type="text"
       placeholder="Type a message..."
+      class="flex-1 px-2 py-1.5 bg-black/30 border border-green-400/30 rounded text-[#e0e0e0] font-mono text-[10px] placeholder:text-[#606080] focus:outline-none focus:border-green-400/60 disabled:opacity-60"
       bind:value={inputValue}
       onkeydown={handleKeydown}
       disabled={isLoading}
     />
-    <button class="send-btn" onclick={handleSend} disabled={isLoading || !inputValue.trim()}>
+    <button
+      class="px-3 py-1.5 bg-green-400/20 border border-green-400/40 rounded text-green-400 font-mono text-[10px] font-bold cursor-pointer transition-all min-w-[50px] hover:bg-green-400/30 hover:border-green-400/60 disabled:opacity-50 disabled:cursor-not-allowed"
+      onclick={handleSend}
+      disabled={isLoading || !inputValue.trim()}
+    >
       {isLoading ? '...' : 'Send'}
     </button>
   </div>
 </div>
 
 <style>
-  .chat-panel {
-    width: 280px;
-    height: 240px;
-    background: rgba(26, 26, 46, 0.95);
-    border: 2px solid rgba(74, 222, 128, 0.3);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid rgba(74, 222, 128, 0.2);
-    color: #4ade80;
-    font-family: monospace;
-    font-size: 11px;
-    font-weight: bold;
-    flex-shrink: 0;
-  }
-
-  .mystery-btn {
-    background: rgba(74, 222, 128, 0.1);
-    border: 1px solid rgba(74, 222, 128, 0.3);
-    border-radius: 4px;
-    color: #4ade80;
-    font-family: monospace;
-    font-size: 9px;
-    padding: 4px 8px;
-    cursor: pointer;
-  }
-
-  .mystery-btn:hover {
-    background: rgba(74, 222, 128, 0.2);
-  }
-
-  .mysteries-list {
-    position: absolute;
-    top: 30px;
-    left: 12px;
-    right: 12px;
-    max-height: 200px;
-    overflow-y: auto;
-    background: #1a1a2c;
-    border: 1px solid rgba(74, 222, 128, 0.2);
-    border-radius: 4px;
-    z-index: 10;
-  }
-
-  .mystery-item {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(74, 222, 128, 0.1);
-    color: #d0d0e0;
-    font-family: monospace;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .mystery-item:hover {
-    background: rgba(74, 222, 128, 0.1);
-  }
-
-  .mystery-title {
-    font-size: 10px;
-    font-weight: bold;
-    color: #4ade80;
-  }
-
-  .mystery-desc {
-    font-size: 9px;
-    color: #a0a0b0;
-    margin-top: 2px;
-  }
-
-  .no-mysteries {
-    padding: 12px;
-    text-align: center;
-    color: #a0a0b0;
-    font-size: 10px;
-    font-family: monospace;
-  }
-
-  .mystery-progress {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: rgba(168, 85, 247, 0.1);
-    border-bottom: 1px solid rgba(168, 85, 247, 0.2);
-    flex-shrink: 0;
-  }
-
-  .mystery-label {
-    font-family: monospace;
-    font-size: 9px;
-    font-weight: bold;
-    color: #a855f7;
-    white-space: nowrap;
-  }
-
-  .progress-bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #a855f7, #4ade80);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-  }
-
-  .progress-text {
-    font-family: monospace;
-    font-size: 8px;
-    color: #a0a0b0;
-    white-space: nowrap;
-  }
-
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .message {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-family: monospace;
-    font-size: 10px;
-  }
-
-  .message.user {
-    background: rgba(74, 222, 128, 0.15);
-    align-self: flex-end;
-    max-width: 85%;
-  }
-
-  .message.ziggy {
-    background: rgba(147, 51, 234, 0.15);
-    align-self: flex-start;
-    max-width: 85%;
-  }
-
-  .message .role {
-    font-size: 8px;
-    font-weight: bold;
-    color: #a0a0b0;
-    text-transform: uppercase;
-  }
-
-  .message.user .role {
-    color: #4ade80;
-  }
-
-  .message.ziggy .role {
-    color: #a855f7;
-  }
-
-  .message .content {
-    color: #e0e0e0;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-  }
-
   .typing {
     display: flex;
     gap: 4px;
@@ -344,18 +174,11 @@
     animation: bounce 1.4s infinite ease-in-out both;
   }
 
-  .dot:nth-child(1) {
-    animation-delay: -0.32s;
-  }
-
-  .dot:nth-child(2) {
-    animation-delay: -0.16s;
-  }
+  .dot:nth-child(1) { animation-delay: -0.32s; }
+  .dot:nth-child(2) { animation-delay: -0.16s; }
 
   @keyframes bounce {
-    0%,
-    80%,
-    100% {
+    0%, 80%, 100% {
       transform: scale(0);
       opacity: 0.5;
     }
@@ -363,69 +186,5 @@
       transform: scale(1);
       opacity: 1;
     }
-  }
-
-  .empty-chat {
-    text-align: center;
-    color: #a0a0b0;
-    font-family: monospace;
-    font-size: 10px;
-    padding: 20px;
-  }
-
-  .input-area {
-    display: flex;
-    gap: 6px;
-    padding: 8px;
-    border-top: 1px solid rgba(74, 222, 128, 0.2);
-    flex-shrink: 0;
-  }
-
-  .input-area input {
-    flex: 1;
-    padding: 6px 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(74, 222, 128, 0.3);
-    border-radius: 4px;
-    color: #e0e0e0;
-    font-family: monospace;
-    font-size: 10px;
-  }
-
-  .input-area input:focus {
-    outline: none;
-    border-color: rgba(74, 222, 128, 0.6);
-  }
-
-  .input-area input::placeholder {
-    color: #606080;
-  }
-
-  .input-area input:disabled {
-    opacity: 0.6;
-  }
-
-  .send-btn {
-    padding: 6px 12px;
-    background: rgba(74, 222, 128, 0.2);
-    border: 1px solid rgba(74, 222, 128, 0.4);
-    border-radius: 4px;
-    color: #4ade80;
-    font-family: monospace;
-    font-size: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-width: 50px;
-  }
-
-  .send-btn:hover:not(:disabled) {
-    background: rgba(74, 222, 128, 0.3);
-    border-color: rgba(74, 222, 128, 0.6);
-  }
-
-  .send-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 </style>

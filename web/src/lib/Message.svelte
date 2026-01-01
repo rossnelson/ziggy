@@ -8,44 +8,16 @@
   let lines = $derived(message.split('\n').slice(0, 3));
 </script>
 
-<div class="message-bubble">
-  <div class="message-content">
+<div class="relative bg-white/95 rounded-lg py-2 px-3 max-w-[220px] min-h-12 shadow-lg">
+  <div class="flex flex-col gap-px font-mono text-[11px] text-[#1a1a2e] leading-tight">
     {#each lines as line}
-      <span class="line">{line}</span>
+      <span class="block max-w-[28ch] overflow-hidden text-ellipsis whitespace-nowrap">{line}</span>
     {/each}
   </div>
   <div class="tail"></div>
 </div>
 
 <style>
-  .message-bubble {
-    position: relative;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    padding: 8px 12px;
-    max-width: 220px;
-    min-height: 48px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .message-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    font-family: monospace;
-    font-size: 11px;
-    color: #1a1a2e;
-    line-height: 1.3;
-  }
-
-  .line {
-    display: block;
-    max-width: 28ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .tail {
     position: absolute;
     bottom: -8px;

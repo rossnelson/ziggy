@@ -112,6 +112,26 @@ var poolStoic = &MessagePool{
 	IdleSleeping: []string{
 		"Zzz...",
 	},
+	NeedsFood: []string{
+		"Energy levels\ndeclining.\nSustenance advised.",
+		"Nutrient\nreserves low.",
+		"Sustenance\nwould be\noptimal.",
+	},
+	NeedsPlay: []string{
+		"Stimulation\nlevels suboptimal.",
+		"Activity\nwould improve\nmorale.",
+		"Recreation\nrecommended.",
+	},
+	NeedsAffection: []string{
+		"Bond metrics\ndeclining.",
+		"Social\ninteraction\nadvised.",
+		"Contact\nwould be...\nacceptable.",
+	},
+	NeedsCritical: []string{
+		"Warning:\nSystems failing.",
+		"Critical state.\nIntervention\nrequired.",
+		"Emergency\nprotocols\nactivating.",
+	},
 }
 
 var poolDramatic = &MessagePool{
@@ -205,6 +225,26 @@ var poolDramatic = &MessagePool{
 	},
 	IdleSleeping: []string{
 		"Zzz... *epic\nsnoring*",
+	},
+	NeedsFood: []string{
+		"The HUNGER!\nIt CONSUMES me!\nFEED ME!",
+		"I'm WASTING\nAWAY! Can you\nnot SEE?!",
+		"STARVATION\napproaches!\nHELP!",
+	},
+	NeedsPlay: []string{
+		"I YEARN for\nENTERTAINMENT!",
+		"My SOUL needs\nSTIMULATION!",
+		"The BOREDOM!\nIt's UNBEARABLE!",
+	},
+	NeedsAffection: []string{
+		"Am I not WORTHY\nof AFFECTION?!",
+		"I am SO\nALONE!",
+		"Does NOBODY\nCARE?!",
+	},
+	NeedsCritical: []string{
+		"This is IT!\nThe FINAL\nCURTAIN!",
+		"I'm DYING!\nDRAMATICALLY!",
+		"SAVE ME before\nit's TOO LATE!",
 	},
 }
 
@@ -300,6 +340,26 @@ var poolCheerful = &MessagePool{
 	IdleSleeping: []string{
 		"Zzz... sweet\ndreams... zzz",
 	},
+	NeedsFood: []string{
+		"Ooh, I'm getting\na bit hungry!\nSnack time?",
+		"My tummy's\nrumbling!\nHehe!",
+		"Food would be\nsuper great\nright now!",
+	},
+	NeedsPlay: []string{
+		"Wanna play?\nI'm getting\nbored!",
+		"Let's do\nsomething fun!",
+		"Playtime?\nPretty please?",
+	},
+	NeedsAffection: []string{
+		"I could use\nsome pets!\nPretty please?",
+		"Missing you!\nCome say hi?",
+		"A little love\nwould be nice!",
+	},
+	NeedsCritical: []string{
+		"Um... I don't\nfeel so good...\nHelp?",
+		"I really need\nsome help\nright now!",
+		"Please help me!\nI'm not okay!",
+	},
 }
 
 var poolSassy = &MessagePool{
@@ -393,6 +453,26 @@ var poolSassy = &MessagePool{
 	},
 	IdleSleeping: []string{
 		"Zzz... leave me\nalone... zzz",
+	},
+	NeedsFood: []string{
+		"So... you're\njust gonna let\nme starve? Cool.",
+		"Food would be\nnice. Just\nsaying.",
+		"Remember when\nyou used to\nfeed me?",
+	},
+	NeedsPlay: []string{
+		"Bored. Not that\nyou'd notice.",
+		"Some of us\nneed attention.\nJust FYI.",
+		"Entertainment\nwould be nice.\nWhatever.",
+	},
+	NeedsAffection: []string{
+		"Oh, too busy\nfor pets?\nTypical.",
+		"I'm fine.\nTotally fine.\n*not fine*",
+		"Remember me?\nYour pet?",
+	},
+	NeedsCritical: []string{
+		"Wow. This is\nhow I go.\nCool. Cool.",
+		"Dying here.\nNo big deal.",
+		"Hello? HELP?\nAnyone?!",
 	},
 }
 
@@ -488,5 +568,25 @@ var poolShy = &MessagePool{
 	},
 	IdleSleeping: []string{
 		"Zzz...",
+	},
+	NeedsFood: []string{
+		"...um...\nhungry...",
+		"*tummy rumbles*\n...sorry...",
+		"...food?\n...maybe?",
+	},
+	NeedsPlay: []string{
+		"...bored...\n...a little...",
+		"...play?\n...if you want...",
+		"*fidgets*\n...um...",
+	},
+	NeedsAffection: []string{
+		"...lonely...",
+		"...miss you...",
+		"...pets?\n...please?",
+	},
+	NeedsCritical: []string{
+		"...help...\n...please...",
+		"...not okay...\n...scared...",
+		"*whimper*\n...need you...",
 	},
 }

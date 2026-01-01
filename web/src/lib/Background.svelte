@@ -18,17 +18,9 @@
 </script>
 
 <div
-  class="background"
+  class="absolute inset-0 bg-no-repeat"
   style:background-image="url('/assets/backgrounds.png')"
   style:background-position="-{pos.x}px -{pos.y}px"
+  style:background-size="480px 480px"
+  style:image-rendering="pixelated"
 ></div>
-
-<style>
-  .background {
-    position: absolute;
-    inset: 0;
-    background-size: 480px 480px;
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
-  }
-</style>

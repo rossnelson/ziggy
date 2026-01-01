@@ -34,6 +34,12 @@ type MessagePool struct {
 	IdleCritical []string `json:"idleCritical"`
 	IdleTun      []string `json:"idleTun"`
 	IdleSleeping []string `json:"idleSleeping"`
+
+	// Need-based coaxing messages
+	NeedsFood      []string `json:"needsFood"`
+	NeedsPlay      []string `json:"needsPlay"`
+	NeedsAffection []string `json:"needsAffection"`
+	NeedsCritical  []string `json:"needsCritical"`
 }
 
 type PoolSelector struct {
@@ -136,6 +142,14 @@ func (s *PoolSelector) getFromPool(pool *MessagePool, category string) []string 
 		return pool.IdleTun
 	case "idleSleeping":
 		return pool.IdleSleeping
+	case "needsFood":
+		return pool.NeedsFood
+	case "needsPlay":
+		return pool.NeedsPlay
+	case "needsAffection":
+		return pool.NeedsAffection
+	case "needsCritical":
+		return pool.NeedsCritical
 	default:
 		return nil
 	}

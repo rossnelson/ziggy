@@ -87,6 +87,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Printf("Started new Chat workflow: %s\n", chatWorkflowID)
 		}
+
+		needUpdaterID := workflowID + "-need-updater"
+		_, err = registry.ExecuteWorkflow(ctx, needUpdaterID, workflow.NeedUpdaterWorkflow, workflow.NeedUpdaterInput{
+			ZiggyWorkflowID: workflowID,
+			Iteration:       0,
+		})
+		if err != nil {
+			fmt.Printf("Note: %v (need updater may already be running)\n", err)
+		} else {
+			fmt.Printf("Started new NeedUpdater workflow: %s\n", needUpdaterID)
+		}
 	}
 
 	// Handle shutdown signals

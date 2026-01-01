@@ -369,3 +369,54 @@ func (s *ZiggyState) GetEffectiveCooldown(action Action) time.Duration {
 		return 0
 	}
 }
+
+// NeedType represents what Ziggy needs most urgently
+type NeedType string
+
+const (
+	NeedNone      NeedType = ""
+	NeedFood      NeedType = "needsFood"
+	NeedPlay      NeedType = "needsPlay"
+	NeedAffection NeedType = "needsAffection"
+	NeedCritical  NeedType = "needsCritical"
+)
+
+// GetMostUrgentNeed returns what Ziggy needs most based on current stats
+func (s *ZiggyState) GetMostUrgentNeed() NeedType {
+	// Don't show needs while sleeping or in tun state
+	if s.Sleeping || s.HP == 0 {
+		return NeedNone
+	}
+
+	// Critical HP takes priority
+	if s.HP < 40 {
+		return NeedCritical
+	}
+
+	// Find the lowest stat that's below threshold
+	const threshold = 60.0
+
+	if s.Fullness < threshold && s.Fullness <= s.Happiness && s.Fullness <= s.Bond {
+		return NeedFood
+	}
+	if s.Happiness < threshold && s.Happiness <= s.Bond {
+		return NeedPlay
+	}
+	if s.Bond < threshold {
+		return NeedAffection
+	}
+
+	return NeedNone
+}
+
+// GetMostRecentActionTime returns the most recent time an action was performed
+func (s *ZiggyState) GetMostRecentActionTime() time.Time {
+	latest := s.LastFeedTime
+	if s.LastPlayTime.After(latest) {
+		latest = s.LastPlayTime
+	}
+	if s.LastPetTime.After(latest) {
+		latest = s.LastPetTime
+	}
+	return latest
+}

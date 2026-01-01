@@ -63,6 +63,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	playCh := workflow.GetSignalChannel(ctx, SignalPlay)
 	petCh := workflow.GetSignalChannel(ctx, SignalPet)
 	wakeCh := workflow.GetSignalChannel(ctx, SignalWake)
+	needMsgCh := workflow.GetSignalChannel(ctx, SignalUpdateNeedMessage)
 
 	// Timer for periodic pool regeneration (6 hours)
 	logger.Info("Starting pool regeneration timer", "interval", PoolRegenerationInterval)
@@ -107,6 +108,18 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			state = state.CalculateCurrentState(now)
 			handleWake(&state, now, logger)
 			state.LastUpdateTime = now
+		})
+
+		selector.AddReceive(needMsgCh, func(c workflow.ReceiveChannel, more bool) {
+			var signal UpdateNeedMessageSignal
+			c.Receive(ctx, &signal)
+			// Only update if no recent action (double-check since NeedUpdater also checks)
+			now := workflow.Now(ctx)
+			lastAction := state.GetMostRecentActionTime()
+			if lastAction.IsZero() || now.Sub(lastAction) > NeedMessageDelay {
+				state.Message = signal.Message
+				logger.Info("Updated need message", "message", signal.Message)
+			}
 		})
 
 		selector.AddFuture(timerFuture, func(f workflow.Future) {
@@ -238,11 +251,11 @@ func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string,
 		state.Happiness += -15 + bondProtection
 		state.Message = pool.Pick("feedFull")
 	} else if state.Fullness < 30 {
-		state.Fullness += 25
-		state.Happiness += 5
+		state.Fullness += 30 // was 25 - bonus when hungry
+		state.Happiness += 8 // was 5
 		state.Message = pool.Pick("feedHungry")
 	} else {
-		state.Fullness += 25
+		state.Fullness += 28 // was 25
 		state.Happiness += 5
 		state.Message = pool.Pick("feedSuccess")
 	}
@@ -283,13 +296,13 @@ func handlePlay(state *ZiggyState, now time.Time, logger interface{ Info(string,
 
 	tooTired := state.Fullness < 20 || state.HP < 30
 	if tooTired {
-		state.Happiness += 5
-		state.Fullness -= 5
+		state.Happiness += 8 // was 5
+		state.Fullness -= 3  // was 5 - less penalty when tired
 		state.Message = pool.Pick("playTired")
 	} else {
-		state.Happiness += 20
-		state.Fullness -= 10
-		state.Bond += 5
+		state.Happiness += 25 // was 20
+		state.Fullness -= 8   // was 10 - less penalty
+		state.Bond += 8       // was 5
 		if state.GetMood() == MoodHappy {
 			state.Message = pool.Pick("playHappy")
 		} else {
@@ -334,15 +347,15 @@ func handlePet(state *ZiggyState, now time.Time, logger interface{ Info(string, 
 	}
 
 	if state.Sleeping {
-		state.Bond += 3
+		state.Bond += 5 // was 3
 		state.Message = pool.Pick("petSleeping")
 	} else if state.Bond > 90 {
 		state.Bond += 10
-		state.Happiness += 5
+		state.Happiness += 8 // was 5
 		state.Message = pool.Pick("petMaxBond")
 	} else {
-		state.Bond += 10
-		state.Happiness += 5
+		state.Bond += 15     // was 10
+		state.Happiness += 8 // was 5
 		mood := state.GetMood()
 		if mood == MoodSad || mood == MoodHungry {
 			state.Message = pool.Pick("petLowMood")

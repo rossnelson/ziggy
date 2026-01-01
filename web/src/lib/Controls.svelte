@@ -79,66 +79,69 @@
   });
 </script>
 
-<div class="controls">
+<div class="flex flex-row sm:flex-col gap-2">
   <button
-    class="action-btn feed"
+    class="action-btn group hover:border-amber-500"
     class:warning={isFull && !isSleeping}
     onclick={handleFeed}
     disabled={feedCooldown > 0 || isSleeping}
   >
-    <span class="icon">🍖</span>
-    <span class="label">Feed</span>
+    <span class="text-base">🍖</span>
+    <span class="font-bold uppercase">Feed</span>
     <span class="shortcut">F</span>
     {#if isSleeping}
-      <span class="sleep-text">💤</span>
+      <span class="status-badge">💤</span>
     {:else if feedCooldown > 0}
-      <span class="cooldown">{formatCooldown(feedCooldown)}</span>
+      <span class="status-badge text-amber-500">{formatCooldown(feedCooldown)}</span>
     {:else if isFull}
-      <span class="warning-text">FULL</span>
+      <span class="status-badge text-red-500 font-bold">FULL</span>
     {/if}
   </button>
 
-  <button class="action-btn play" onclick={handlePlay} disabled={playCooldown > 0 || isSleeping}>
-    <span class="icon">⚽</span>
-    <span class="label">Play</span>
+  <button
+    class="action-btn group hover:border-green-400"
+    onclick={handlePlay}
+    disabled={playCooldown > 0 || isSleeping}
+  >
+    <span class="text-base">⚽</span>
+    <span class="font-bold uppercase">Play</span>
     <span class="shortcut">P</span>
     {#if isSleeping}
-      <span class="sleep-text">💤</span>
+      <span class="status-badge">💤</span>
     {:else if playCooldown > 0}
-      <span class="cooldown">{formatCooldown(playCooldown)}</span>
+      <span class="status-badge text-amber-500">{formatCooldown(playCooldown)}</span>
     {/if}
   </button>
 
-  <button class="action-btn pet" onclick={handlePet} disabled={petCooldown > 0 || isSleeping}>
-    <span class="icon">✋</span>
-    <span class="label">Pet</span>
+  <button
+    class="action-btn group hover:border-pink-500"
+    onclick={handlePet}
+    disabled={petCooldown > 0 || isSleeping}
+  >
+    <span class="text-base">✋</span>
+    <span class="font-bold uppercase">Pet</span>
     <span class="shortcut">T</span>
     {#if isSleeping}
-      <span class="sleep-text">💤</span>
+      <span class="status-badge">💤</span>
     {:else if petCooldown > 0}
-      <span class="cooldown">{formatCooldown(petCooldown)}</span>
+      <span class="status-badge text-amber-500">{formatCooldown(petCooldown)}</span>
     {/if}
   </button>
 
   {#if isSleeping}
-    <button class="action-btn wake" onclick={handleWake}>
-      <span class="icon">☀️</span>
-      <span class="label">Wake</span>
+    <button
+      class="action-btn border-amber-400/50 bg-amber-400/10 hover:border-amber-400 hover:bg-amber-400/20"
+      onclick={handleWake}
+    >
+      <span class="text-base">☀️</span>
+      <span class="font-bold uppercase">Wake</span>
       <span class="shortcut">W</span>
-      {#if isSleeping}
-        <span class="penalty">-10 HAP</span>
-      {/if}
+      <span class="status-badge text-red-500 text-[8px] whitespace-nowrap">-10 HAP</span>
     </button>
   {/if}
 </div>
 
 <style>
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
   .action-btn {
     position: relative;
     display: flex;
@@ -172,13 +175,8 @@
     cursor: not-allowed;
   }
 
-  .icon {
-    font-size: 16px;
-  }
-
-  .label {
-    font-weight: bold;
-    text-transform: uppercase;
+  .action-btn:disabled:hover {
+    transform: translateY(0);
   }
 
   .shortcut {
@@ -192,26 +190,13 @@
     border-radius: 3px;
   }
 
-  .cooldown {
+  .status-badge {
     position: absolute;
     left: -28px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 9px;
-    color: #f59e0b;
     white-space: nowrap;
-  }
-
-  .feed:hover:not(:disabled) {
-    border-color: #f59e0b;
-  }
-
-  .play:hover:not(:disabled) {
-    border-color: #4ade80;
-  }
-
-  .pet:hover:not(:disabled) {
-    border-color: #ec4899;
   }
 
   .warning {
@@ -221,43 +206,5 @@
 
   .warning:hover:not(:disabled) {
     border-color: #ef4444;
-  }
-
-  .warning-text {
-    position: absolute;
-    left: -32px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 8px;
-    color: #ef4444;
-    font-weight: bold;
-  }
-
-  .sleep-text {
-    position: absolute;
-    left: -24px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 10px;
-  }
-
-  .wake {
-    border-color: rgba(251, 191, 36, 0.5);
-    background: rgba(251, 191, 36, 0.1);
-  }
-
-  .wake:hover {
-    border-color: #fbbf24;
-    background: rgba(251, 191, 36, 0.2);
-  }
-
-  .penalty {
-    position: absolute;
-    left: -48px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 8px;
-    color: #ef4444;
-    white-space: nowrap;
   }
 </style>
