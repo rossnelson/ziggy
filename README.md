@@ -74,64 +74,54 @@ Without the API key, Ziggy uses embedded fallback message pools.
 
 Ziggy demonstrates how to build interactive, long-running applications with Temporal. The architecture separates concerns into three layers: a reactive frontend, a stateless API server, and durable Temporal workflows.
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              BROWSER                                     │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                     Svelte 5 Frontend                              │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐  │  │
-│  │  │ Ziggy   │ │ Stats   │ │Controls │ │ Message │ │    Chat     │  │  │
-│  │  │ Sprite  │ │  Bars   │ │ Buttons │ │ Bubble  │ │  Interface  │  │  │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────────┘  │  │
-│  │                              │                                     │  │
-│  │                     Svelte Stores (State + Cooldowns)              │  │
-│  └──────────────────────────────┼────────────────────────────────────┘  │
-└─────────────────────────────────┼───────────────────────────────────────┘
-                                  │ HTTP + SSE
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Go HTTP API Server (:8080)                       │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────────┐ │
-│  │ Signal Routes  │  │ Query Routes   │  │ SSE Event Stream           │ │
-│  │ POST /signal/* │  │ GET /state     │  │ GET /events (polls 1s)     │ │
-│  └───────┬────────┘  └───────┬────────┘  └─────────────┬──────────────┘ │
-└──────────┼───────────────────┼─────────────────────────┼────────────────┘
-           │                   │                         │
-           └───────────────────┼─────────────────────────┘
-                               │ Temporal SDK
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Temporal Server (:7233)                             │
-│                   Persists all workflow state                            │
-└─────────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Go Worker Process                                │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                         WORKFLOWS                                 │   │
-│  │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │   │
-│  │  │  ZiggyWorkflow  │  │  ChatWorkflow   │  │ NeedUpdater      │  │   │
-│  │  │  Main pet state │  │  Conversations  │  │ Periodic needs   │  │   │
-│  │  │  + interactions │  │  + mysteries    │  │ messages         │  │   │
-│  │  └─────────────────┘  └─────────────────┘  └──────────────────┘  │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                         ACTIVITIES                                │   │
-│  │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │   │
-│  │  │ RegeneratePool  │  │ GenerateChat    │  │ QueryZiggyState  │  │   │
-│  │  │ AI msg pools    │  │ AI responses    │  │ Cross-workflow   │  │   │
-│  │  └────────┬────────┘  └────────┬────────┘  └──────────────────┘  │   │
-│  └───────────┼────────────────────┼─────────────────────────────────┘   │
-└──────────────┼────────────────────┼─────────────────────────────────────┘
-               │                    │
-               └────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Claude API (Haiku model)                            │
-│                   Personality dialogue + Chat responses                  │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Browser["Browser"]
+        subgraph Frontend["Svelte 5 Frontend"]
+            Sprite["Ziggy Sprite"]
+            Stats["Stats Bars"]
+            Controls["Controls Buttons"]
+            Message["Message Bubble"]
+            Chat["Chat Interface"]
+        end
+        Store["Svelte Stores<br/>(State + Cooldowns)"]
+    end
+
+    subgraph API["Go HTTP API Server (:8080)"]
+        Signals["Signal Routes<br/>POST /signal/*"]
+        Queries["Query Routes<br/>GET /state"]
+        SSE["SSE Event Stream<br/>GET /events"]
+    end
+
+    subgraph Temporal["Temporal Server (:7233)"]
+        Persist["Persists all workflow state"]
+    end
+
+    subgraph Worker["Go Worker Process"]
+        subgraph Workflows["Workflows"]
+            Ziggy["ZiggyWorkflow<br/>Main pet state"]
+            ChatWF["ChatWorkflow<br/>Conversations"]
+            NeedUpdater["NeedUpdater<br/>Periodic messages"]
+        end
+        subgraph Activities["Activities"]
+            RegenPool["RegeneratePool<br/>AI msg pools"]
+            GenChat["GenerateChat<br/>AI responses"]
+            QueryState["QueryZiggyState<br/>Cross-workflow"]
+        end
+    end
+
+    subgraph Claude["Claude API (Haiku)"]
+        AI["Personality dialogue<br/>+ Chat responses"]
+    end
+
+    Frontend --> Store
+    Store -->|HTTP + SSE| API
+    Signals --> Temporal
+    Queries --> Temporal
+    SSE --> Temporal
+    Temporal --> Worker
+    RegenPool --> Claude
+    GenChat --> Claude
 ```
 
 ## Tech Stack
