@@ -192,11 +192,22 @@
 
   .status-badge {
     position: absolute;
-    left: -28px;
-    top: 50%;
-    transform: translateY(-50%);
     font-size: 9px;
     white-space: nowrap;
+    /* Mobile: position at bottom center */
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Desktop: position to the left */
+  @media (min-width: 640px) {
+    .status-badge {
+      left: -28px;
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
+    }
   }
 
   .warning {

@@ -363,11 +363,48 @@ func buildChatPrompt(input ChatInput) string {
 		if input.Mystery.Progress < len(input.Mystery.Hints) {
 			nextHint = input.Mystery.Hints[input.Mystery.Progress]
 		}
-		conceptHint := ""
-		if input.Mystery.Concept != "" {
-			conceptHint = fmt.Sprintf("(The answer relates to: %s)\n", input.Mystery.Concept)
-		}
-		mysterySection = fmt.Sprintf(`
+
+		if input.Track == "educational" {
+			// Educational track: direct teaching about Temporal concepts
+			mysterySection = fmt.Sprintf(`
+LEARNING MODE - You are teaching the user about Temporal!
+
+Topic: "%s"
+Concept: %s
+Description: "%s"
+
+Teaching points to cover (in order):
+%v
+
+Points already covered: %v
+Next point to teach: %s
+Full explanation: %s
+
+TEACHING RULES:
+1. If this is the START, introduce the concept enthusiastically and explain the first teaching point
+2. Explain concepts directly and clearly - this is not a guessing game
+3. Use simple analogies to make Temporal concepts easy to understand
+4. After explaining a point, ask if they have questions or want to learn more
+5. When they ask for more or say "next", teach the next point (set hintGiven to that point)
+6. When all points are covered and they understand, celebrate their learning and set solved=true
+7. Connect concepts to how YOU (Ziggy) work as a Temporal workflow
+8. Be encouraging and make learning fun!
+`,
+				input.Mystery.Title,
+				input.Mystery.Concept,
+				input.Mystery.Description,
+				input.Mystery.Hints,
+				input.Mystery.HintsGiven,
+				nextHint,
+				input.Mystery.Solution,
+			)
+		} else {
+			// Fun track: guessing game with riddles
+			conceptHint := ""
+			if input.Mystery.Concept != "" {
+				conceptHint = fmt.Sprintf("(The answer relates to: %s)\n", input.Mystery.Concept)
+			}
+			mysterySection = fmt.Sprintf(`
 MYSTERY MODE - You are playing a guessing game with the user!
 
 The mystery: "%s"
@@ -384,18 +421,42 @@ IMPORTANT RULES FOR MYSTERY MODE:
 5. If they guess correctly (mention the concept or solution), celebrate and set solved=true
 6. Keep it fun and playful - you're excited to share this puzzle!
 `,
-			input.Mystery.Title,
-			input.Mystery.Description,
-			conceptHint,
-			input.Mystery.HintsGiven,
-			nextHint,
-			input.Mystery.Solution,
-		)
+				input.Mystery.Title,
+				input.Mystery.Description,
+				conceptHint,
+				input.Mystery.HintsGiven,
+				nextHint,
+				input.Mystery.Solution,
+			)
+		}
 	}
 
 	responseFormat := `Respond as Ziggy in 2-4 short sentences. Keep responses under 200 characters total.`
 	if input.Mystery != nil {
 		responseFormat = `Respond as JSON: {"response": "your message", "mysteryUpdate": {"solved": false, "hintGiven": "hint if given", "newProgress": 0}}`
+	}
+
+	// Different tone for educational vs fun track
+	if input.Track == "educational" {
+		return fmt.Sprintf(`You are Ziggy, an educational guide teaching Temporal workflow concepts. You live inside a Temporal workflow yourself, which gives you firsthand experience.
+
+%s
+Conversation so far:
+%s
+
+Style Rules:
+- Be clear, direct, and informative - like a friendly instructor
+- Use precise technical terminology
+- Skip the quirky personality traits - focus on teaching
+- Keep responses concise but thorough (3-5 sentences)
+- Use concrete examples from how YOU work as a workflow
+- Never use emoji or cutesy expressions
+
+%s`,
+			mysterySection,
+			history,
+			responseFormat,
+		)
 	}
 
 	return fmt.Sprintf(`You are Ziggy, a tardigrade virtual pet living in a Temporal workflow.

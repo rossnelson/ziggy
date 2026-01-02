@@ -13,6 +13,7 @@
   let inputValue = $state('');
   let mysteries = $state<Mystery[]>([]);
   let showMysteries = $state(false);
+  let track = $state<'fun' | 'educational'>('fun');
   let messagesContainer: HTMLDivElement;
 
   let messages = $derived($chatMessages);
@@ -70,10 +71,15 @@
   }
 
   async function loadMysteries() {
-    const result = await getAvailableMysteries('fun');
+    const result = await getAvailableMysteries(track);
     if (result.success && result.data) {
       mysteries = result.data;
     }
+  }
+
+  function toggleTrack() {
+    track = track === 'fun' ? 'educational' : 'fun';
+    loadMysteries();
   }
 
   async function handleSend() {
@@ -89,8 +95,11 @@
   async function handleStartMystery(m: Mystery) {
     showMysteries = false;
     chatLoading.set(true);
-    await startMystery(m.id);
-    await sendChatMessage(`let's solve the mystery "${m.title}"`);
+    await startMystery(m.id, track);
+    const message = track === 'educational'
+      ? `let's learn about "${m.title}"`
+      : `let's solve the mystery "${m.title}"`;
+    await sendChatMessage(message);
     chatLoading.set(false);
     scrollToBottom();
   }
@@ -126,9 +135,9 @@
   class:dragging={isDragging}
   style:height="{drawerHeight}px"
 >
-  <!-- Grab bar -->
+  <!-- Grab bar with collapsed label -->
   <div
-    class="h-6 flex justify-center items-center cursor-grab touch-none"
+    class="h-12 flex justify-center items-center cursor-grab touch-none relative"
     ontouchstart={onTouchStart}
     ontouchmove={onTouchMove}
     ontouchend={onTouchEnd}
@@ -137,20 +146,32 @@
     tabindex="0"
     onkeydown={(e) => e.key === 'Enter' && toggleDrawer()}
   >
-    <div class="w-10 h-1 bg-green-400/50 rounded-full"></div>
+    <div class="w-10 h-1 bg-green-400/50 rounded-full absolute top-2"></div>
+    {#if drawerState === 'collapsed'}
+      <span class="text-green-400/70 font-mono text-[10px] mt-2">Chat with Ziggy</span>
+    {/if}
   </div>
 
-  <!-- Chat content -->
-  <div class="flex flex-col h-[calc(100%-24px)] overflow-hidden">
+  <!-- Chat content (hidden when collapsed) -->
+  <div class="flex flex-col h-[calc(100%-48px)] overflow-hidden" class:hidden={drawerState === 'collapsed'}>
     <!-- Header -->
     <div class="flex justify-between items-center px-3 py-1.5 border-b border-green-400/20 shrink-0">
       <span class="text-green-400 font-mono text-[11px] font-bold">Chat with Ziggy</span>
-      <button
-        class="bg-green-400/10 border border-green-400/30 rounded px-2 py-0.5 text-green-400 font-mono text-[9px] cursor-pointer hover:bg-green-400/20"
-        onclick={() => (showMysteries = !showMysteries)}
-      >
-        {showMysteries ? 'Hide' : 'Mysteries'}
-      </button>
+      <div class="flex gap-1">
+        <button
+          class="bg-green-400/10 border border-green-400/30 rounded px-2 py-0.5 text-green-400 font-mono text-[9px] cursor-pointer hover:bg-green-400/20"
+          onclick={toggleTrack}
+          title={track === 'fun' ? 'Switch to educational mode' : 'Switch to fun mode'}
+        >
+          {track === 'fun' ? '🎮' : '📚'}
+        </button>
+        <button
+          class="border rounded px-2 py-0.5 text-green-400 font-mono text-[9px] cursor-pointer transition-colors {showMysteries ? 'bg-green-400/30 border-green-400/60' : 'bg-green-400/10 border-green-400/30 hover:bg-green-400/20'}"
+          onclick={() => (showMysteries = !showMysteries)}
+        >
+          {track === 'educational' ? 'Topics' : 'Mysteries'}
+        </button>
+      </div>
     </div>
 
     {#if mystery?.active}

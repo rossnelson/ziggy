@@ -92,13 +92,18 @@ func (s *Server) handleStartMystery(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		MysteryID string `json:"mysteryId"`
+		Track     string `json:"track"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	err := s.registry.SignalWorkflow(r.Context(), s.chatWorkflowID, workflow.SignalStartMystery, req.MysteryID)
+	signal := workflow.StartMysterySignal{
+		MysteryID: req.MysteryID,
+		Track:     req.Track,
+	}
+	err := s.registry.SignalWorkflow(r.Context(), s.chatWorkflowID, workflow.SignalStartMystery, signal)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

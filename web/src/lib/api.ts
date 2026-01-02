@@ -181,10 +181,10 @@ export async function getMysteryStatus(): Promise<ApiResponse<MysteryStatus>> {
   return fetchApi<MysteryStatus>('/api/chat/mystery');
 }
 
-export async function startMystery(mysteryId: string): Promise<ApiResponse<void>> {
+export async function startMystery(mysteryId: string, track: string = 'fun'): Promise<ApiResponse<void>> {
   return fetchApi<void>('/api/chat/mystery/start', {
     method: 'POST',
-    body: JSON.stringify({ mysteryId }),
+    body: JSON.stringify({ mysteryId, track }),
   });
 }
 

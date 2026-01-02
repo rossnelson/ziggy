@@ -34,6 +34,11 @@ type SendMessageSignal struct {
 	Content string `json:"content"`
 }
 
+type StartMysterySignal struct {
+	MysteryID string `json:"mysteryId"`
+	Track     string `json:"track"`
+}
+
 func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Chat workflow started", "owner", input.Owner, "track", input.Track)
@@ -105,11 +110,16 @@ func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 		})
 
 		selector.AddReceive(mysteryCh, func(c workflow.ReceiveChannel, more bool) {
-			var mysteryID string
-			c.Receive(ctx, &mysteryID)
-			logger.Info("Starting mystery", "mysteryID", mysteryID)
+			var signal StartMysterySignal
+			c.Receive(ctx, &signal)
+			logger.Info("Starting mystery", "mysteryID", signal.MysteryID, "track", signal.Track)
 
-			mystery := GetMystery(mysteryID, track)
+			mysteryTrack := signal.Track
+			if mysteryTrack == "" {
+				mysteryTrack = track
+			}
+
+			mystery := GetMystery(signal.MysteryID, mysteryTrack)
 			if mystery != nil {
 				state.ActiveMystery = mystery
 				state.MysteryProgress = 0
