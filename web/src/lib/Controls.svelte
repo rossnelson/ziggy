@@ -194,10 +194,11 @@
     position: absolute;
     font-size: 9px;
     white-space: nowrap;
-    /* Mobile: position at bottom center */
-    bottom: 2px;
+    /* Mobile: position below the button */
+    top: 100%;
     left: 50%;
     transform: translateX(-50%);
+    margin-top: 2px;
   }
 
   /* Desktop: position to the left */
@@ -205,8 +206,8 @@
     .status-badge {
       left: -28px;
       top: 50%;
-      bottom: auto;
       transform: translateY(-50%);
+      margin-top: 0;
     }
   }
 
