@@ -1,0 +1,13 @@
+name: ziggy
+type: sw.application
+description: Ziggy - A Temporal-powered virtual pet
+assets:
+  logo:
+    data:
+      url: https://raw.githubusercontent.com/rossnelson/ziggy/main/web/public/ziggy.png
+data:
+  defaultDeviceType: raspberrypi4-64
+  supportedDeviceTypes:
+    - raspberrypi4-64
+    - raspberrypi3-64
+    - raspberrypi5

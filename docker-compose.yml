@@ -1,6 +1,11 @@
 version: '2.1'
 
 services:
+  mdns:
+    image: flungo/avahi
+    network_mode: host
+    restart: always
+
   temporal:
     image: temporalio/auto-setup:latest
     environment:
@@ -23,6 +28,4 @@ services:
       - worker
     ports:
       - "80:80"
-    environment:
-      - API_URL=http://worker:8080
     restart: always
