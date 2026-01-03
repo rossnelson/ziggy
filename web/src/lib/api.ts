@@ -10,6 +10,9 @@ export const chatMessages = writable<ChatMessage[]>([]);
 export const chatLoading = writable(false);
 export const mysteryStatus = writable<MysteryStatus | null>(null);
 
+// Config store
+export const aiEnabled = writable<boolean | null>(null);
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -86,6 +89,17 @@ export async function sendWake(): Promise<ApiResponse<ZiggyState>> {
 export async function healthCheck(): Promise<boolean> {
   const result = await fetchApi('/api/health');
   return result.success;
+}
+
+interface ConfigResponse {
+  aiEnabled: boolean;
+}
+
+export async function getConfig(): Promise<void> {
+  const result = await fetchApi<ConfigResponse>('/api/config');
+  if (result.success && result.data) {
+    aiEnabled.set(result.data.aiEnabled);
+  }
 }
 
 interface ChatHistoryResponse {

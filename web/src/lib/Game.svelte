@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { ziggyState, mood } from './store';
-  import { startSSE, stopSSE } from './api';
+  import { startSSE, stopSSE, getConfig, aiEnabled } from './api';
   import Background from './Background.svelte';
   import Ziggy from './Ziggy.svelte';
   import Stats from './Stats.svelte';
@@ -30,7 +30,10 @@
     }, 5000);
   }
 
+  let isAiEnabled = $derived($aiEnabled);
+
   onMount(async () => {
+    await getConfig();
     startSSE();
     loading = false;
   });
@@ -84,13 +87,21 @@
       </div>
 
       <!-- Chat: hidden on mobile (drawer replaces it), visible on desktop -->
-      <div class="order-3 flex flex-col items-start">
-        <Chat />
-      </div>
+      {#if isAiEnabled}
+        <div class="order-3 flex flex-col items-start">
+          <Chat />
+        </div>
+      {:else if isAiEnabled === false}
+        <div class="order-3 hidden sm:flex w-[280px] h-60 bg-[rgba(26,26,46,0.95)] border-2 border-green-400/30 rounded-lg flex-col items-center justify-center">
+          <span class="text-red-400/80 font-mono text-[10px] text-center px-4">Chat unavailable<br/><span class="text-[9px] text-[#a0a0b0]">AI not configured</span></span>
+        </div>
+      {/if}
     </div>
 
     <!-- Mobile chat drawer -->
-    <ChatDrawer />
+    {#if isAiEnabled}
+      <ChatDrawer />
+    {/if}
   </div>
 {/if}
 

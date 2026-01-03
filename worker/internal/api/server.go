@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"ziggy/internal/temporal"
@@ -37,6 +38,7 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("POST /api/signal/pet", s.handlePet)
 	mux.HandleFunc("POST /api/signal/wake", s.handleWake)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+	mux.HandleFunc("GET /api/config", s.handleConfig)
 
 	// Chat routes
 	mux.HandleFunc("GET /api/chat/history", s.handleGetChatHistory)
@@ -138,6 +140,13 @@ func (s *Server) handleWake(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"status": "ok",
+	})
+}
+
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	aiEnabled := os.Getenv("ANTHROPIC_API_KEY") != ""
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"aiEnabled": aiEnabled,
 	})
 }
 
