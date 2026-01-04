@@ -31,6 +31,8 @@ type Mystery struct {
 	Hints       []string `json:"hints"`
 	Solution    string   `json:"solution"`
 	Concept     string   `json:"concept,omitempty"` // Temporal concept for educational
+	Summary     string   `json:"summary,omitempty"` // Educational summary for the topic
+	DocsURL     string   `json:"docsUrl,omitempty"` // Link to Temporal documentation
 }
 
 type MysteryStatus struct {

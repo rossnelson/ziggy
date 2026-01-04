@@ -110,7 +110,6 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 	}
 
 	log.Printf("[AI] Response text length: %d chars", len(text))
-	log.Printf("[AI] Full response:\n%s", text)
 
 	// First try parsing the entire response as JSON (common case)
 	var pool MessagePool
@@ -276,6 +275,8 @@ type MysteryContext struct {
 	HintsGiven  []string `json:"hintsGiven"`
 	Progress    int      `json:"progress"`
 	Solution    string   `json:"solution"`
+	Summary     string   `json:"summary,omitempty"`
+	DocsURL     string   `json:"docsUrl,omitempty"`
 }
 
 type ChatInput struct {
@@ -370,47 +371,30 @@ func buildChatPrompt(input ChatInput) string {
 
 	mysterySection := ""
 	if input.Mystery != nil {
-		nextHint := ""
-		if input.Mystery.Progress < len(input.Mystery.Hints) {
-			nextHint = input.Mystery.Hints[input.Mystery.Progress]
-		}
-
 		if input.Track == "educational" {
-			// Educational track: direct teaching about Temporal concepts
+			// Educational track: provide summary and link to docs
 			mysterySection = fmt.Sprintf(`
-LEARNING MODE - You are teaching the user about Temporal!
+LEARNING MODE - Teaching about: %s
 
-Topic: "%s"
-Concept: %s
-Description: "%s"
+Summary to paraphrase:
+%s
 
-Teaching points to cover (in order):
-%v
+YOUR RESPONSE MUST END WITH THIS EXACT LINE:
+Learn more: %s
 
-Points already covered: %v
-Next point to teach: %s
-Full explanation: %s
-
-TEACHING RULES:
-1. If this is the START, introduce the concept enthusiastically and explain the first teaching point
-2. Explain concepts directly and clearly - this is not a guessing game
-3. Use simple analogies to make Temporal concepts easy to understand
-4. After explaining a point, ask if they have questions or want to learn more
-5. When they ask for more or say "next", teach the next point (set hintGiven to that point)
-6. When all points are covered and they understand, celebrate their learning and set solved=true
-7. Connect concepts to how YOU (Ziggy) work as a Temporal workflow
-8. Be encouraging and make learning fun!
+Keep explanation to 2-3 sentences, then add the learn more link.
+Set solved=true in JSON.
 `,
 				input.Mystery.Title,
-				input.Mystery.Concept,
-				input.Mystery.Description,
-				input.Mystery.Hints,
-				input.Mystery.HintsGiven,
-				nextHint,
-				input.Mystery.Solution,
+				input.Mystery.Summary,
+				input.Mystery.DocsURL,
 			)
 		} else {
 			// Fun track: guessing game with riddles
+			nextHint := ""
+			if input.Mystery.Progress < len(input.Mystery.Hints) {
+				nextHint = input.Mystery.Hints[input.Mystery.Progress]
+			}
 			conceptHint := ""
 			if input.Mystery.Concept != "" {
 				conceptHint = fmt.Sprintf("(The answer relates to: %s)\n", input.Mystery.Concept)

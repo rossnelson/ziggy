@@ -169,6 +169,8 @@ export interface Mystery {
   track: string;
   concept?: string;
   hints: string[];
+  summary?: string;
+  docsUrl?: string;
 }
 
 export interface MysteryStatus {

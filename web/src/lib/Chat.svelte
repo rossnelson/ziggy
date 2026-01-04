@@ -66,6 +66,8 @@
     }
   }
 
+  let prevMessageCount = $state(0);
+
   function scrollToBottom() {
     if (messagesContainer) {
       setTimeout(() => {
@@ -74,16 +76,22 @@
     }
   }
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom only when new messages are added
   $effect(() => {
-    if (messages.length > 0) {
+    if (messages.length > prevMessageCount) {
       scrollToBottom();
     }
+    prevMessageCount = messages.length;
   });
 
   onMount(() => {
     loadMysteries();
   });
+
+  function formatMessageWithLinks(content: string): string {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-green-400 underline hover:text-green-300">$1</a>');
+  }
 </script>
 
 <div class="hidden sm:flex w-[280px] h-60 bg-[rgba(26,26,46,0.95)] border-2 border-green-400/30 rounded-lg flex-col overflow-hidden relative">
@@ -109,13 +117,15 @@
   {#if mystery?.active}
     <div class="flex items-center gap-2 px-3 py-2 bg-purple-500/10 border-b border-purple-500/20 shrink-0">
       <span class="font-mono text-[9px] font-bold text-purple-500 whitespace-nowrap">{mystery.mystery?.title}</span>
-      <div class="flex-1 h-1.5 bg-black/30 rounded-sm overflow-hidden">
-        <div
-          class="h-full bg-gradient-to-r from-purple-500 to-green-400 rounded-sm transition-all duration-300"
-          style="width: {(mystery.progress / mystery.totalHints) * 100}%"
-        ></div>
-      </div>
-      <span class="font-mono text-[8px] text-[#a0a0b0] whitespace-nowrap">{mystery.progress}/{mystery.totalHints} hints</span>
+      {#if mystery.mystery?.track !== 'educational'}
+        <div class="flex-1 h-1.5 bg-black/30 rounded-sm overflow-hidden">
+          <div
+            class="h-full bg-gradient-to-r from-purple-500 to-green-400 rounded-sm transition-all duration-300"
+            style="width: {(mystery.progress / mystery.totalHints) * 100}%"
+          ></div>
+        </div>
+        <span class="font-mono text-[8px] text-[#a0a0b0] whitespace-nowrap">{mystery.progress}/{mystery.totalHints} hints</span>
+      {/if}
     </div>
   {:else if showMysteries}
     <div class="absolute top-[30px] left-3 right-3 max-h-[200px] overflow-y-auto bg-[#1a1a2c] border border-green-400/20 rounded z-10">
@@ -140,7 +150,7 @@
         <span class="text-[8px] font-bold uppercase {message.role === 'user' ? 'text-green-400' : 'text-purple-500'}">
           {message.role === 'user' ? 'You' : 'Ziggy'}
         </span>
-        <span class="text-[#e0e0e0] break-words whitespace-pre-wrap">{message.content}</span>
+        <span class="text-[#e0e0e0] break-words whitespace-pre-wrap">{@html formatMessageWithLinks(message.content)}</span>
       </div>
     {/each}
     {#if messages.length === 0 && !isLoading}

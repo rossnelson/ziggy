@@ -101,8 +101,14 @@ func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 			// Get Ziggy's current state for personality context
 			ziggyState := queryZiggyState(ctx, input.ZiggyID, logger)
 
+			// Use mystery's track if one is active, otherwise use workflow track
+			responseTrack := track
+			if state.ActiveMystery != nil && state.ActiveMystery.Track != "" {
+				responseTrack = state.ActiveMystery.Track
+			}
+
 			// Generate response via activity
-			response := generateChatResponse(ctx, &state, ziggyState, track, logger)
+			response := generateChatResponse(ctx, &state, ziggyState, responseTrack, logger)
 
 			// Add Ziggy's response
 			state.AddMessage("ziggy", response, workflow.Now(ctx))
