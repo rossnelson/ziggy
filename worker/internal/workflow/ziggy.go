@@ -194,6 +194,14 @@ func getPoolSelector(state *ZiggyState) *PoolSelector {
 }
 
 func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
+	// Egg stage: can't feed yet
+	age := now.Sub(state.CreatedAt).Seconds()
+	if GetStageForAge(age) == StageEgg {
+		state.Message = "*wiggle*\n*wiggle*\nStill hatching..."
+		logger.Info("Cannot feed - Ziggy is still an egg")
+		return
+	}
+
 	pool := getPoolSelector(state)
 
 	// Check cooldown (shorter when hungry)
@@ -256,6 +264,14 @@ func handleFeed(state *ZiggyState, now time.Time, logger interface{ Info(string,
 }
 
 func handlePlay(state *ZiggyState, now time.Time, logger interface{ Info(string, ...interface{}) }) {
+	// Egg stage: can't play yet
+	age := now.Sub(state.CreatedAt).Seconds()
+	if GetStageForAge(age) == StageEgg {
+		state.Message = "*wiggle*\n*wiggle*\nStill hatching..."
+		logger.Info("Cannot play - Ziggy is still an egg")
+		return
+	}
+
 	pool := getPoolSelector(state)
 
 	// Check cooldown (shorter when unhappy)

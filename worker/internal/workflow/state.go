@@ -245,17 +245,25 @@ func (s *ZiggyState) applyDecayTick() {
 		return
 	}
 
+	// During egg stage, only bond decays (no fullness/happiness decay)
+	age := s.LastUpdateTime.Sub(s.CreatedAt).Seconds()
+	isEgg := GetStageForAge(age) == StageEgg
+
 	bondProtection := 0.0
 	if s.Bond > 50 {
 		bondProtection = (s.Bond - 50) / 100
 	}
 
 	if s.Sleeping {
-		s.Fullness -= DecayFullnessSleep
-		s.Happiness += RecoverHappinessSleep
+		if !isEgg {
+			s.Fullness -= DecayFullnessSleep
+			s.Happiness += RecoverHappinessSleep
+		}
 	} else {
-		s.Fullness -= DecayFullnessAwake * (1 - bondProtection)
-		s.Happiness -= DecayHappinessAwake * (1 - bondProtection)
+		if !isEgg {
+			s.Fullness -= DecayFullnessAwake * (1 - bondProtection)
+			s.Happiness -= DecayHappinessAwake * (1 - bondProtection)
+		}
 		s.Bond -= DecayBond
 	}
 
@@ -278,17 +286,25 @@ func (s *ZiggyState) applyPartialDecayTick(fraction float64) {
 		return
 	}
 
+	// During egg stage, only bond decays (no fullness/happiness decay)
+	age := s.LastUpdateTime.Sub(s.CreatedAt).Seconds()
+	isEgg := GetStageForAge(age) == StageEgg
+
 	bondProtection := 0.0
 	if s.Bond > 50 {
 		bondProtection = (s.Bond - 50) / 100
 	}
 
 	if s.Sleeping {
-		s.Fullness -= DecayFullnessSleep * fraction
-		s.Happiness += RecoverHappinessSleep * fraction
+		if !isEgg {
+			s.Fullness -= DecayFullnessSleep * fraction
+			s.Happiness += RecoverHappinessSleep * fraction
+		}
 	} else {
-		s.Fullness -= DecayFullnessAwake * (1 - bondProtection) * fraction
-		s.Happiness -= DecayHappinessAwake * (1 - bondProtection) * fraction
+		if !isEgg {
+			s.Fullness -= DecayFullnessAwake * (1 - bondProtection) * fraction
+			s.Happiness -= DecayHappinessAwake * (1 - bondProtection) * fraction
+		}
 		s.Bond -= DecayBond * fraction
 	}
 

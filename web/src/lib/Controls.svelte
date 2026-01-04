@@ -6,6 +6,7 @@
   let feedCooldown = $state(0);
   let isFull = $derived($ziggyState.fullness > 90);
   let isSleeping = $derived($ziggyState.sleeping);
+  let isEgg = $derived($ziggyState.stage === 'egg');
   let playCooldown = $state(0);
   let petCooldown = $state(0);
 
@@ -18,13 +19,13 @@
   }
 
   async function handleFeed() {
-    if (feedCooldown > 0) return;
+    if (feedCooldown > 0 || isEgg) return;
     await sendFeed();
     updateCooldowns();
   }
 
   async function handlePlay() {
-    if (playCooldown > 0) return;
+    if (playCooldown > 0 || isEgg) return;
     await sendPlay();
     updateCooldowns();
   }
@@ -51,10 +52,10 @@
 
     switch (event.key.toLowerCase()) {
       case 'f':
-        handleFeed();
+        if (!isEgg) handleFeed();
         break;
       case 'p':
-        handlePlay();
+        if (!isEgg) handlePlay();
         break;
       case 't':
         handlePet();
@@ -82,14 +83,16 @@
 <div class="flex flex-row sm:flex-col gap-2">
   <button
     class="action-btn group hover:border-amber-500"
-    class:warning={isFull && !isSleeping}
+    class:warning={isFull && !isSleeping && !isEgg}
     onclick={handleFeed}
-    disabled={feedCooldown > 0 || isSleeping}
+    disabled={feedCooldown > 0 || isSleeping || isEgg}
   >
     <span class="text-base">🍖</span>
     <span class="font-bold uppercase">Feed</span>
     <span class="shortcut">F</span>
-    {#if isSleeping}
+    {#if isEgg}
+      <span class="status-badge">🥚</span>
+    {:else if isSleeping}
       <span class="status-badge">💤</span>
     {:else if feedCooldown > 0}
       <span class="status-badge text-amber-500">{formatCooldown(feedCooldown)}</span>
@@ -101,12 +104,14 @@
   <button
     class="action-btn group hover:border-green-400"
     onclick={handlePlay}
-    disabled={playCooldown > 0 || isSleeping}
+    disabled={playCooldown > 0 || isSleeping || isEgg}
   >
     <span class="text-base">⚽</span>
     <span class="font-bold uppercase">Play</span>
     <span class="shortcut">P</span>
-    {#if isSleeping}
+    {#if isEgg}
+      <span class="status-badge">🥚</span>
+    {:else if isSleeping}
       <span class="status-badge">💤</span>
     {:else if playCooldown > 0}
       <span class="status-badge text-amber-500">{formatCooldown(playCooldown)}</span>
