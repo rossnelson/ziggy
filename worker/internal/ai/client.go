@@ -111,6 +111,15 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 
 	log.Printf("[AI] Response text length: %d chars", len(text))
 
+	// First try parsing the entire response as JSON (common case)
+	var pool MessagePool
+	text = strings.TrimSpace(text)
+	if err := json.Unmarshal([]byte(text), &pool); err == nil {
+		log.Printf("[AI] Parsed response directly as JSON")
+		return &pool, nil
+	}
+
+	// Fall back to extracting JSON from mixed content
 	jsonStr := extractJSON(text)
 	if jsonStr == "" {
 		log.Printf("[AI] No JSON found in response. First 500 chars: %s", truncate(text, 500))
@@ -119,7 +128,6 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 
 	log.Printf("[AI] Extracted JSON length: %d chars", len(jsonStr))
 
-	var pool MessagePool
 	if err := json.Unmarshal([]byte(jsonStr), &pool); err != nil {
 		log.Printf("[AI] JSON parse error: %v. First 500 chars of JSON: %s", err, truncate(jsonStr, 500))
 		return nil, fmt.Errorf("failed to parse pool JSON: %w", err)
