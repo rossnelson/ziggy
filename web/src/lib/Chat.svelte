@@ -20,7 +20,7 @@
   let inputValue = $state('');
   let mysteries = $state<Mystery[]>([]);
   let showMysteries = $state(false);
-  let track = $state<'fun' | 'educational'>('fun');
+  let track = $state<'fun' | 'educational'>('educational');
   let messagesContainer: HTMLDivElement;
 
   let messages = $derived($chatMessages);
