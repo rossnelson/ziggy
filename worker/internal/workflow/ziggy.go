@@ -66,10 +66,6 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	needMsgCh := workflow.GetSignalChannel(ctx, SignalUpdateNeedMessage)
 	poolResultCh := workflow.GetSignalChannel(ctx, SignalPoolResult)
 
-	// Timer for periodic pool regeneration (6 hours)
-	logger.Info("Starting pool regeneration timer", "interval", PoolRegenerationInterval)
-	timerFuture := workflow.NewTimer(ctx, PoolRegenerationInterval)
-
 	for {
 		selector := workflow.NewSelector(ctx)
 		prevPersonality := state.Personality
@@ -135,12 +131,6 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			}
 		})
 
-		selector.AddFuture(timerFuture, func(f workflow.Future) {
-			logger.Info("Pool regeneration timer fired, regenerating and restarting timer", "interval", PoolRegenerationInterval)
-			regeneratePool("scheduled")
-			timerFuture = workflow.NewTimer(ctx, PoolRegenerationInterval)
-		})
-
 		selector.Select(ctx)
 
 		// Check for personality change after interaction
@@ -178,26 +168,23 @@ func triggerPoolRegeneration(ctx workflow.Context, state *ZiggyState, logger int
 		return
 	}
 
-	logger.Info("Triggering pool regeneration workflow", "reason", reason, "personality", state.Personality)
+	logger.Info("Signaling pool regenerator", "reason", reason, "personality", state.Personality)
 
 	// Mark as generating to prevent concurrent regenerations
 	state.PoolGeneratedAt = now
 
 	age := now.Sub(state.CreatedAt).Seconds()
 	workflowID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	poolWorkflowID := workflowID + "-pool-regenerator"
 
-	childOpts := workflow.ChildWorkflowOptions{
-		WorkflowID: workflowID + "-pool-regenerator",
+	signal := PoolRegenerateSignal{
+		Personality: state.Personality,
+		Stage:       GetStageForAge(age),
+		Bond:        state.Bond,
 	}
-	childCtx := workflow.WithChildOptions(ctx, childOpts)
 
-	// Start child workflow async - it will signal back the result
-	workflow.ExecuteChildWorkflow(childCtx, PoolRegeneratorWorkflow, PoolRegeneratorInput{
-		ZiggyWorkflowID: workflowID,
-		Personality:     state.Personality,
-		Stage:           GetStageForAge(age),
-		Bond:            state.Bond,
-	})
+	// Signal the pool regenerator workflow (fire and forget)
+	workflow.SignalExternalWorkflow(ctx, poolWorkflowID, "", SignalPoolRegenerate, signal)
 }
 
 func getPoolSelector(state *ZiggyState) *PoolSelector {

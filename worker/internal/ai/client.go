@@ -110,6 +110,7 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 	}
 
 	log.Printf("[AI] Response text length: %d chars", len(text))
+	log.Printf("[AI] Full response:\n%s", text)
 
 	// First try parsing the entire response as JSON (common case)
 	var pool MessagePool
