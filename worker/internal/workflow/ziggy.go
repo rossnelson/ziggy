@@ -64,6 +64,7 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 	petCh := workflow.GetSignalChannel(ctx, SignalPet)
 	wakeCh := workflow.GetSignalChannel(ctx, SignalWake)
 	needMsgCh := workflow.GetSignalChannel(ctx, SignalUpdateNeedMessage)
+	poolResultCh := workflow.GetSignalChannel(ctx, SignalPoolResult)
 
 	// Timer for periodic pool regeneration (6 hours)
 	logger.Info("Starting pool regeneration timer", "interval", PoolRegenerationInterval)
@@ -122,6 +123,18 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 			}
 		})
 
+		selector.AddReceive(poolResultCh, func(c workflow.ReceiveChannel, more bool) {
+			var result PoolRegenerationOutput
+			c.Receive(ctx, &result)
+			if result.Pool != nil {
+				state.RuntimePool = result.Pool
+				state.PoolGeneratedAt = result.GeneratedAt
+				logger.Info("Pool updated from regenerator workflow")
+			} else {
+				logger.Info("Pool regenerator returned nil, using fallback")
+			}
+		})
+
 		selector.AddFuture(timerFuture, func(f workflow.Future) {
 			logger.Info("Pool regeneration timer fired, regenerating and restarting timer", "interval", PoolRegenerationInterval)
 			regeneratePool("scheduled")
@@ -165,35 +178,25 @@ func triggerPoolRegeneration(ctx workflow.Context, state *ZiggyState, logger int
 		return
 	}
 
-	logger.Info("Triggering pool regeneration (async)", "reason", reason, "personality", state.Personality)
-
-	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 2 * time.Minute,
-	}
-	actCtx := workflow.WithActivityOptions(ctx, ao)
-
-	age := now.Sub(state.CreatedAt).Seconds()
-	input := PoolRegenerationInput{
-		Personality: state.Personality,
-		Stage:       GetStageForAge(age),
-		Bond:        state.Bond,
-	}
+	logger.Info("Triggering pool regeneration workflow", "reason", reason, "personality", state.Personality)
 
 	// Mark as generating to prevent concurrent regenerations
 	state.PoolGeneratedAt = now
 
-	// Run async so we don't block signal processing
-	workflow.Go(ctx, func(ctx workflow.Context) {
-		var output PoolRegenerationOutput
-		err := workflow.ExecuteActivity(actCtx, "RegeneratePool", input).Get(ctx, &output)
-		if err != nil {
-			logger.Info("Pool regeneration failed, using fallback", "error", err.Error())
-			return
-		}
+	age := now.Sub(state.CreatedAt).Seconds()
+	workflowID := workflow.GetInfo(ctx).WorkflowExecution.ID
 
-		state.RuntimePool = output.Pool
-		state.PoolGeneratedAt = output.GeneratedAt
-		logger.Info("Pool regenerated successfully")
+	childOpts := workflow.ChildWorkflowOptions{
+		WorkflowID: workflowID + "-pool-regenerator",
+	}
+	childCtx := workflow.WithChildOptions(ctx, childOpts)
+
+	// Start child workflow async - it will signal back the result
+	workflow.ExecuteChildWorkflow(childCtx, PoolRegeneratorWorkflow, PoolRegeneratorInput{
+		ZiggyWorkflowID: workflowID,
+		Personality:     state.Personality,
+		Stage:           GetStageForAge(age),
+		Bond:            state.Bond,
 	})
 }
 

@@ -8,6 +8,7 @@ func RegisterWorkflows() {
 	temporal.AddWorkflow("ZiggyWorkflow", ZiggyWorkflow)
 	temporal.AddWorkflow("ChatWorkflow", ChatWorkflow)
 	temporal.AddWorkflow("NeedUpdaterWorkflow", NeedUpdaterWorkflow)
+	temporal.AddWorkflow("PoolRegeneratorWorkflow", PoolRegeneratorWorkflow)
 }
 
 func RegisterActivities(activities *Activities) {

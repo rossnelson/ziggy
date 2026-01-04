@@ -47,12 +47,12 @@ type MessagePool struct {
 	PlayTun      []string `json:"playTun"`
 	PlayCooldown []string `json:"playCooldown"`
 
-	PetSuccess   []string `json:"petSuccess"`
-	PetMaxBond   []string `json:"petMaxBond"`
-	PetLowMood   []string `json:"petLowMood"`
-	PetSleeping  []string `json:"petSleeping"`
-	PetTun       []string `json:"petTun"`
-	PetCooldown  []string `json:"petCooldown"`
+	PetSuccess  []string `json:"petSuccess"`
+	PetMaxBond  []string `json:"petMaxBond"`
+	PetLowMood  []string `json:"petLowMood"`
+	PetSleeping []string `json:"petSleeping"`
+	PetTun      []string `json:"petTun"`
+	PetCooldown []string `json:"petCooldown"`
 
 	Reviving []string `json:"reviving"`
 
@@ -117,6 +117,8 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 	if err := json.Unmarshal([]byte(text), &pool); err == nil {
 		log.Printf("[AI] Parsed response directly as JSON")
 		return &pool, nil
+	} else {
+		log.Printf("[AI] Direct JSON parse failed: %v", err)
 	}
 
 	// Fall back to extracting JSON from mixed content
@@ -286,8 +288,8 @@ type ChatInput struct {
 }
 
 type ChatResponse struct {
-	Response      string               `json:"response"`
-	MysteryUpdate *ChatMysteryUpdate   `json:"mysteryUpdate,omitempty"`
+	Response      string             `json:"response"`
+	MysteryUpdate *ChatMysteryUpdate `json:"mysteryUpdate,omitempty"`
 }
 
 type ChatMysteryUpdate struct {
