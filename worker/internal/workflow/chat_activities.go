@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"strings"
 
 	"ziggy/internal/ai"
 	"ziggy/internal/temporal"
@@ -61,6 +60,7 @@ type ChatActivityOutput struct {
 
 type MysteryUpdate struct {
 	Solved      bool   `json:"solved"`
+	Failed      bool   `json:"failed"`
 	HintGiven   string `json:"hintGiven,omitempty"`
 	NewProgress int    `json:"newProgress"`
 }
@@ -86,8 +86,8 @@ func (a *ChatActivities) GenerateChatResponse(ctx context.Context, input ChatAct
 	}
 
 	if input.Mystery != nil {
-		log.Printf("[ChatActivity] Mystery: title=%s track=%s summary=%q docsUrl=%s",
-			input.Mystery.Title, input.Mystery.Track, input.Mystery.Summary, input.Mystery.DocsURL)
+		log.Printf("[ChatActivity] Mystery: title=%s track=%s summary=%q",
+			input.Mystery.Title, input.Mystery.Track, input.Mystery.Summary)
 		aiInput.Mystery = &ai.MysteryContext{
 			Title:       input.Mystery.Title,
 			Description: input.Mystery.Description,
@@ -97,7 +97,6 @@ func (a *ChatActivities) GenerateChatResponse(ctx context.Context, input ChatAct
 			Progress:    input.Progress,
 			Solution:    input.Mystery.Solution,
 			Summary:     input.Mystery.Summary,
-			DocsURL:     input.Mystery.DocsURL,
 		}
 	}
 
@@ -109,16 +108,8 @@ func (a *ChatActivities) GenerateChatResponse(ctx context.Context, input ChatAct
 		}, nil
 	}
 
-	// For educational topics, append the docs link if not already present
-	responseText := response.Response
-	if input.Track == "educational" && input.Mystery != nil && input.Mystery.DocsURL != "" {
-		if !strings.Contains(responseText, input.Mystery.DocsURL) {
-			responseText = responseText + "\n\nLearn more: " + input.Mystery.DocsURL
-		}
-	}
-
 	output := &ChatActivityOutput{
-		Response: responseText,
+		Response: response.Response,
 	}
 
 	if response.MysteryUpdate != nil {
@@ -130,6 +121,7 @@ func (a *ChatActivities) GenerateChatResponse(ctx context.Context, input ChatAct
 		}
 		output.MysteryUpdate = &MysteryUpdate{
 			Solved:      response.MysteryUpdate.Solved,
+			Failed:      response.MysteryUpdate.Failed,
 			HintGiven:   response.MysteryUpdate.HintGiven,
 			NewProgress: newProgress,
 		}

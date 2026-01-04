@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
-    "canvas-confetti": "^1.9.4"
+    "canvas-confetti": "^1.9.4",
+    "marked": "^17.0.1"
   }
 }

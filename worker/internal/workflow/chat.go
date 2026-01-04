@@ -218,9 +218,35 @@ func generateChatResponse(ctx workflow.Context, chatState *ChatState, ziggyState
 			chatState.HintsGiven = append(chatState.HintsGiven, output.MysteryUpdate.HintGiven)
 		}
 		chatState.MysteryProgress = output.MysteryUpdate.NewProgress
+
+		// Cap progress at total hints to prevent overflow
+		if chatState.ActiveMystery != nil && chatState.MysteryProgress > len(chatState.ActiveMystery.Hints) {
+			chatState.MysteryProgress = len(chatState.ActiveMystery.Hints)
+		}
+
 		if output.MysteryUpdate.Solved && chatState.ActiveMystery != nil {
 			chatState.Solved = append(chatState.Solved, chatState.ActiveMystery.ID)
 			chatState.ActiveMystery = nil
+			chatState.MysteryProgress = 0
+			chatState.HintsGiven = nil
+		}
+		if output.MysteryUpdate.Failed && chatState.ActiveMystery != nil {
+			// Failed - clear mystery but don't mark as solved (can try again)
+			chatState.ActiveMystery = nil
+			chatState.MysteryProgress = 0
+			chatState.HintsGiven = nil
+		}
+
+		// Auto-fail if hints exhausted, user made a guess (no new hint), and AI didn't solve it
+		if chatState.ActiveMystery != nil &&
+			chatState.MysteryProgress >= len(chatState.ActiveMystery.Hints) &&
+			output.MysteryUpdate.HintGiven == "" {
+			// All hints used, user made final guess and got it wrong
+			solution := chatState.ActiveMystery.Solution
+			chatState.ActiveMystery = nil
+			chatState.MysteryProgress = 0
+			chatState.HintsGiven = nil
+			return output.Response + "\n\n*wiggles sympathetically*\nThe answer was: " + solution + "\n\nNice try! Want to try another mystery?"
 		}
 	}
 

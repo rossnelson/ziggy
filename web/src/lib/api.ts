@@ -128,6 +128,11 @@ export function startSSE() {
         const chatData = parsed.data as ChatHistoryResponse;
         chatMessages.set(chatData.messages ?? []);
         mysteryStatus.set(chatData.mysteryStatus ?? null);
+        // Clear loading when we receive ziggy's response
+        const msgs = chatData.messages ?? [];
+        if (msgs.length > 0 && msgs[msgs.length - 1].role === 'ziggy') {
+          chatLoading.set(false);
+        }
       }
     } catch (err) {
       console.error('SSE parse error:', err);
@@ -170,7 +175,6 @@ export interface Mystery {
   concept?: string;
   hints: string[];
   summary?: string;
-  docsUrl?: string;
 }
 
 export interface MysteryStatus {

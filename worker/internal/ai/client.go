@@ -276,7 +276,6 @@ type MysteryContext struct {
 	Progress    int      `json:"progress"`
 	Solution    string   `json:"solution"`
 	Summary     string   `json:"summary,omitempty"`
-	DocsURL     string   `json:"docsUrl,omitempty"`
 }
 
 type ChatInput struct {
@@ -296,6 +295,7 @@ type ChatResponse struct {
 
 type ChatMysteryUpdate struct {
 	Solved      bool    `json:"solved"`
+	Failed      bool    `json:"failed"`
 	HintGiven   string  `json:"hintGiven,omitempty"`
 	NewProgress float64 `json:"newProgress"`
 }
@@ -306,6 +306,11 @@ func (c *Client) GenerateChat(ctx context.Context, input ChatInput) (*ChatRespon
 
 	if c == nil {
 		return nil, fmt.Errorf("AI client not initialized")
+	}
+
+	// Use web search for educational track
+	if input.Track == "educational" {
+		return c.generateChatWithWebSearch(ctx, input)
 	}
 
 	prompt := buildChatPrompt(input)
@@ -356,6 +361,137 @@ func (c *Client) GenerateChat(ctx context.Context, input ChatInput) (*ChatRespon
 	return &ChatResponse{Response: cleanText}, nil
 }
 
+// generateChatWithWebSearch uses the Anthropic web search tool to provide
+// real-time documentation for educational queries about Temporal.
+func (c *Client) generateChatWithWebSearch(ctx context.Context, input ChatInput) (*ChatResponse, error) {
+	log.Printf("[AI] Using web search for educational track")
+
+	// Build conversation history for multi-turn context
+	messages := buildConversationMessages(input)
+
+	// Create web search tool with Temporal docs domain filtering
+	webSearchTool := anthropic.WebSearchTool20250305Param{
+		AllowedDomains: []string{"docs.temporal.io", "temporal.io", "learn.temporal.io"},
+	}
+
+	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
+		Model:     anthropic.ModelClaudeHaiku4_5,
+		MaxTokens: 2048,
+		System: []anthropic.TextBlockParam{
+			{Text: buildEducationalSystemPrompt(input)},
+		},
+		Messages: messages,
+		Tools: []anthropic.ToolUnionParam{
+			{OfWebSearchTool20250305: &webSearchTool},
+		},
+	})
+	if err != nil {
+		log.Printf("[AI] Web search API request failed: %v", err)
+		return nil, fmt.Errorf("claude API error: %w", err)
+	}
+
+	// Extract response text and citations from content blocks
+	return parseWebSearchResponse(message)
+}
+
+// buildConversationMessages converts chat input to Anthropic message format
+func buildConversationMessages(input ChatInput) []anthropic.MessageParam {
+	messages := make([]anthropic.MessageParam, 0, len(input.Messages))
+
+	for _, m := range input.Messages {
+		if m.Role == "user" {
+			messages = append(messages, anthropic.NewUserMessage(anthropic.NewTextBlock(m.Content)))
+		} else {
+			messages = append(messages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(m.Content)))
+		}
+	}
+
+	return messages
+}
+
+// buildEducationalSystemPrompt creates the system prompt for educational mode
+func buildEducationalSystemPrompt(input ChatInput) string {
+	topicContext := ""
+	if input.Mystery != nil {
+		topicContext = fmt.Sprintf(`
+Current topic: %s
+Description: %s
+`, input.Mystery.Title, input.Mystery.Description)
+	}
+
+	return fmt.Sprintf(`You are Ziggy, a friendly tardigrade who lives inside a Temporal workflow.
+You help developers learn about Temporal concepts by searching the official documentation.
+
+%s
+
+Guidelines:
+- Use the web search tool to find accurate, up-to-date information from Temporal's docs
+- Explain concepts clearly and concisely (3-5 sentences)
+- Include relevant code examples when helpful
+- Relate concepts to your own experience as a workflow when appropriate
+- Be encouraging and make learning fun
+- Never use emoji
+- Do NOT include "Learn more" links - citations are added automatically`, topicContext)
+}
+
+// parseWebSearchResponse extracts text and citations from the API response
+func parseWebSearchResponse(message *anthropic.Message) (*ChatResponse, error) {
+	var responseText strings.Builder
+	var citations []string
+
+	log.Printf("[AI] Parsing web search response with %d content blocks, stop_reason: %s", len(message.Content), message.StopReason)
+
+	for i, block := range message.Content {
+		log.Printf("[AI] Content block %d type: %s", i, block.Type)
+		switch variant := block.AsAny().(type) {
+		case anthropic.TextBlock:
+			log.Printf("[AI] TextBlock: %s", truncate(variant.Text, 100))
+			responseText.WriteString(variant.Text)
+			// Extract citations from text block
+			for _, citation := range variant.Citations {
+				log.Printf("[AI] Citation type: %s", citation.Type)
+				if webCitation, ok := citation.AsAny().(anthropic.CitationsWebSearchResultLocation); ok {
+					// Use plain URL format since the UI doesn't parse markdown
+					citations = append(citations, webCitation.URL)
+				}
+			}
+		case anthropic.ServerToolUseBlock:
+			log.Printf("[AI] ServerToolUseBlock: name=%s id=%s", variant.Name, variant.ID)
+		case anthropic.WebSearchToolResultBlock:
+			log.Printf("[AI] WebSearchToolResultBlock: tool_use_id=%s", variant.ToolUseID)
+		default:
+			log.Printf("[AI] Unknown block type: %T", variant)
+		}
+	}
+
+	text := responseText.String()
+	if text == "" {
+		return nil, fmt.Errorf("empty response from web search")
+	}
+
+	// Append unique citations as markdown list under "Learn more" heading
+	if len(citations) > 0 {
+		seen := make(map[string]bool)
+		var uniqueCitations []string
+		for _, c := range citations {
+			if !seen[c] {
+				seen[c] = true
+				uniqueCitations = append(uniqueCitations, "- "+c)
+			}
+		}
+		text += "\n\n## Learn more\n" + strings.Join(uniqueCitations, "\n")
+	}
+
+	log.Printf("[AI] Web search response: %s", truncate(text, 200))
+
+	return &ChatResponse{
+		Response: text,
+		MysteryUpdate: &ChatMysteryUpdate{
+			Solved: true, // Educational topics are "solved" after explanation
+		},
+	}, nil
+}
+
 func buildChatPrompt(input ChatInput) string {
 	bondDesc := getBondDescription(input.Bond)
 
@@ -371,64 +507,61 @@ func buildChatPrompt(input ChatInput) string {
 
 	mysterySection := ""
 	if input.Mystery != nil {
-		if input.Track == "educational" {
-			// Educational track: provide summary and link to docs
-			mysterySection = fmt.Sprintf(`
-LEARNING MODE - Teaching about: %s
+		// Fun track: guessing game with riddles
+		// (Educational track uses generateChatWithWebSearch instead)
+		hintsExhausted := input.Mystery.Progress >= len(input.Mystery.Hints)
+		nextHint := ""
+		if !hintsExhausted {
+			nextHint = input.Mystery.Hints[input.Mystery.Progress]
+		}
+		conceptHint := ""
+		if input.Mystery.Concept != "" {
+			conceptHint = fmt.Sprintf("(The answer relates to: %s)\n", input.Mystery.Concept)
+		}
 
-Summary to paraphrase:
-%s
+		exhaustedSection := ""
+		if hintsExhausted {
+			exhaustedSection = `
+*** ALL HINTS EXHAUSTED - CHALLENGE OVER ***
+The user has used all hints and hasn't solved it. You MUST:
+1. Kindly reveal the answer: "The answer was [solution]!"
+2. Be encouraging: "Nice try! You were getting close. Want to try another mystery?"
+3. Set failed=true AND solved=false in the JSON response
+4. Do NOT give any more hints (set hintGiven to empty string)
+`
+		}
 
-YOUR RESPONSE MUST END WITH THIS EXACT LINE:
-Learn more: %s
-
-Keep explanation to 2-3 sentences, then add the learn more link.
-Set solved=true in JSON.
-`,
-				input.Mystery.Title,
-				input.Mystery.Summary,
-				input.Mystery.DocsURL,
-			)
-		} else {
-			// Fun track: guessing game with riddles
-			nextHint := ""
-			if input.Mystery.Progress < len(input.Mystery.Hints) {
-				nextHint = input.Mystery.Hints[input.Mystery.Progress]
-			}
-			conceptHint := ""
-			if input.Mystery.Concept != "" {
-				conceptHint = fmt.Sprintf("(The answer relates to: %s)\n", input.Mystery.Concept)
-			}
-			mysterySection = fmt.Sprintf(`
+		mysterySection = fmt.Sprintf(`
 MYSTERY MODE - You are playing a guessing game with the user!
 
 The mystery: "%s"
 Your riddle to them: "%s"
-%sHints given so far: %v
+%sHints given so far: %d of %d
 Next hint (if they need help): %s
 The answer they must guess: %s
-
+%s
 IMPORTANT RULES FOR MYSTERY MODE:
 1. If this is the START of the mystery (no hints given yet), present your riddle excitedly, ask them to guess, and remind them they can ask for a hint if stumped
-2. The user must GUESS the answer - never reveal it directly!
+2. The user must GUESS the answer - never reveal it directly (unless all hints exhausted and they fail)!
 3. If they guess wrong, encourage them and offer a hint
 4. If they seem stuck or ask for help, give the next hint naturally
 5. If they guess correctly (mention the concept or solution), celebrate and set solved=true
 6. Keep it fun and playful - you're excited to share this puzzle!
 `,
-				input.Mystery.Title,
-				input.Mystery.Description,
-				conceptHint,
-				input.Mystery.HintsGiven,
-				nextHint,
-				input.Mystery.Solution,
-			)
-		}
+			input.Mystery.Title,
+			input.Mystery.Description,
+			conceptHint,
+			input.Mystery.Progress,
+			len(input.Mystery.Hints),
+			nextHint,
+			input.Mystery.Solution,
+			exhaustedSection,
+		)
 	}
 
 	responseFormat := `Respond as Ziggy in 2-4 short sentences. Keep responses under 200 characters total.`
 	if input.Mystery != nil {
-		responseFormat = `Respond as JSON: {"response": "your message", "mysteryUpdate": {"solved": false, "hintGiven": "hint if given", "newProgress": 0}}`
+		responseFormat = `Respond as JSON: {"response": "your message", "mysteryUpdate": {"solved": false, "failed": false, "hintGiven": "hint if given", "newProgress": 0}}`
 	}
 
 	// Different tone for educational vs fun track

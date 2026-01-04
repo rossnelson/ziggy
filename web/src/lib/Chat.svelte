@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { marked } from 'marked';
   import {
     sendChatMessage,
     getAvailableMysteries,
@@ -9,6 +10,12 @@
     mysteryStatus,
     type Mystery,
   } from './api';
+
+  // Configure marked for safe rendering
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
 
   let inputValue = $state('');
   let mysteries = $state<Mystery[]>([]);
@@ -41,7 +48,7 @@
     chatLoading.set(true);
 
     await sendChatMessage(content);
-    chatLoading.set(false);
+    // Loading cleared by SSE handler when ziggy's response arrives
     scrollToBottom();
   }
 
@@ -54,8 +61,7 @@
       ? `let's learn about "${mystery.title}"`
       : `let's solve the mystery "${mystery.title}"`;
     await sendChatMessage(message);
-
-    chatLoading.set(false);
+    // Loading cleared by SSE handler when ziggy's response arrives
     scrollToBottom();
   }
 
@@ -88,9 +94,10 @@
     loadMysteries();
   });
 
-  function formatMessageWithLinks(content: string): string {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-green-400 underline hover:text-green-300">$1</a>');
+  function formatMessage(content: string): string {
+    // Parse markdown and return HTML
+    const html = marked.parse(content) as string;
+    return html;
   }
 </script>
 
@@ -150,7 +157,7 @@
         <span class="text-[8px] font-bold uppercase {message.role === 'user' ? 'text-green-400' : 'text-purple-500'}">
           {message.role === 'user' ? 'You' : 'Ziggy'}
         </span>
-        <span class="text-[#e0e0e0] break-words whitespace-pre-wrap">{@html formatMessageWithLinks(message.content)}</span>
+        <span class="text-[#e0e0e0] break-words chat-content">{@html formatMessage(message.content)}</span>
       </div>
     {/each}
     {#if messages.length === 0 && !isLoading}
@@ -159,11 +166,16 @@
     {#if isLoading}
       <div class="flex flex-col gap-0.5 px-2 py-1.5 rounded-md font-mono text-[10px] bg-purple-600/15 self-start max-w-[85%]">
         <span class="text-[8px] font-bold uppercase text-purple-500">Ziggy</span>
-        <span class="typing">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </span>
+        <div class="flex items-center gap-1.5">
+          {#if track === 'educational'}
+            <span class="text-[9px] text-purple-400">Searching docs</span>
+          {/if}
+          <span class="typing">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+        </div>
       </div>
     {/if}
   </div>
@@ -214,5 +226,53 @@
       transform: scale(1);
       opacity: 1;
     }
+  }
+
+  /* Markdown content styles */
+  :global(.chat-content a) {
+    color: #4ade80;
+    text-decoration: underline;
+  }
+  :global(.chat-content a:hover) {
+    color: #86efac;
+  }
+  :global(.chat-content p) {
+    margin: 0.25rem 0;
+  }
+  :global(.chat-content p:first-child) {
+    margin-top: 0;
+  }
+  :global(.chat-content p:last-child) {
+    margin-bottom: 0;
+  }
+  :global(.chat-content h2) {
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin: 0.5rem 0 0.25rem;
+    color: #a855f7;
+  }
+  :global(.chat-content ul, .chat-content ol) {
+    margin: 0.25rem 0;
+    padding-left: 1rem;
+  }
+  :global(.chat-content li) {
+    margin: 0.125rem 0;
+  }
+  :global(.chat-content code) {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.1rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+  :global(.chat-content pre) {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    margin: 0.25rem 0;
+  }
+  :global(.chat-content pre code) {
+    background: none;
+    padding: 0;
   }
 </style>
