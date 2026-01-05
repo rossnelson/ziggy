@@ -1,11 +1,6 @@
 version: '2.1'
 
 services:
-  mdns:
-    image: flungo/avahi
-    network_mode: host
-    restart: always
-
   temporal:
     image: temporalio/auto-setup:latest
     environment:
