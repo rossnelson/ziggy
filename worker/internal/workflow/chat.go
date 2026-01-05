@@ -167,9 +167,12 @@ func queryZiggyState(ctx workflow.Context, ziggyID string, logger interface{ Inf
 
 	// Query the ZiggyWorkflow for current state
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 30 * time.Second,
+		StartToCloseTimeout: 10 * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: 2,
+			InitialInterval:    500 * time.Millisecond,
+			BackoffCoefficient: 2.0,
+			MaximumInterval:    10 * time.Second,
+			MaximumAttempts:    5,
 		},
 	}
 	actCtx := workflow.WithActivityOptions(ctx, ao)
