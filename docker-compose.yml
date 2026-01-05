@@ -30,6 +30,7 @@ services:
       - temporal
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_UI_PUBLIC_PATH=/temporal
     restart: always
 
   worker:
