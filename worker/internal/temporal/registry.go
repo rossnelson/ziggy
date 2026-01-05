@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -19,6 +20,11 @@ type Config struct {
 	HostPort  string
 	Namespace string
 	TaskQueue string
+}
+
+type WorkflowStatus struct {
+	Status    string
+	CloseTime time.Time
 }
 
 type Registry struct {
@@ -169,6 +175,43 @@ func (r *Registry) GetClient() client.Client {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.client
+}
+
+func (r *Registry) DescribeWorkflow(ctx context.Context, workflowID string) (*WorkflowStatus, error) {
+	r.mu.RLock()
+	if r.client == nil {
+		r.mu.RUnlock()
+		return nil, fmt.Errorf("registry not initialized")
+	}
+	c := r.client
+	r.mu.RUnlock()
+
+	desc, err := c.DescribeWorkflowExecution(ctx, workflowID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	status := &WorkflowStatus{
+		Status: desc.WorkflowExecutionInfo.Status.String(),
+	}
+
+	if desc.WorkflowExecutionInfo.CloseTime != nil {
+		status.CloseTime = desc.WorkflowExecutionInfo.CloseTime.AsTime()
+	}
+
+	return status, nil
+}
+
+func (r *Registry) TerminateWorkflow(ctx context.Context, workflowID, reason string) error {
+	r.mu.RLock()
+	if r.client == nil {
+		r.mu.RUnlock()
+		return fmt.Errorf("registry not initialized")
+	}
+	c := r.client
+	r.mu.RUnlock()
+
+	return c.TerminateWorkflow(ctx, workflowID, "", reason)
 }
 
 func (r *Registry) Shutdown() {
