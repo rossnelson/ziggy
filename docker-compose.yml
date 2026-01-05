@@ -33,12 +33,24 @@ services:
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    command: ["./ziggy", "worker", "--temporal-address", "temporal:7233"]
+    restart: always
+
+  api:
+    build: ./worker
+    depends_on:
+      - temporal
+      - worker
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    command: ["./ziggy", "serve", "--temporal-address", "temporal:7233"]
     restart: always
 
   web:
     build: ./web
     depends_on:
-      - worker
+      - api
     ports:
       - "80:80"
     restart: always
