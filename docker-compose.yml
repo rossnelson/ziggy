@@ -24,6 +24,14 @@ services:
       - SKIP_DEFAULT_NAMESPACE_CREATION=false
     restart: always
 
+  temporal-ui:
+    image: temporalio/ui:latest
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    restart: always
+
   worker:
     build: ./worker
     depends_on:
