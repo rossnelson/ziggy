@@ -49,15 +49,15 @@ const (
 const (
 	DecayIntervalSeconds = 10.0
 
-	DecayFullnessAwake  = 2.0
-	DecayHappinessAwake = 1.0
-	DecayBond           = 0.5
+	DecayFullnessAwake  = 1.0 // was 2.0
+	DecayHappinessAwake = 0.5 // was 1.0
+	DecayBond           = 0.3 // was 0.5
 
-	DecayFullnessSleep    = 1.0
-	RecoverHappinessSleep = 0.5
+	DecayFullnessSleep    = 0.5 // was 1.0
+	RecoverHappinessSleep = 1.0 // was 0.5
 
-	HPDecayRate   = 2.0
-	HPRecoverRate = 1.0
+	HPDecayRate   = 1.5 // was 2.0
+	HPRecoverRate = 2.0 // was 1.0
 
 	// Evolution age thresholds (in seconds)
 	AgeEggTooBaby   = 60      // 1 minute
