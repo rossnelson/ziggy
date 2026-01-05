@@ -438,6 +438,7 @@ Guidelines:
 func parseWebSearchResponse(message *anthropic.Message) (*ChatResponse, error) {
 	var responseText strings.Builder
 	var citations []string
+	sawToolUse := false
 
 	log.Printf("[AI] Parsing web search response with %d content blocks, stop_reason: %s", len(message.Content), message.StopReason)
 
@@ -446,17 +447,20 @@ func parseWebSearchResponse(message *anthropic.Message) (*ChatResponse, error) {
 		switch variant := block.AsAny().(type) {
 		case anthropic.TextBlock:
 			log.Printf("[AI] TextBlock: %s", truncate(variant.Text, 100))
-			responseText.WriteString(variant.Text)
-			// Extract citations from text block
-			for _, citation := range variant.Citations {
-				log.Printf("[AI] Citation type: %s", citation.Type)
-				if webCitation, ok := citation.AsAny().(anthropic.CitationsWebSearchResultLocation); ok {
-					// Use plain URL format since the UI doesn't parse markdown
-					citations = append(citations, webCitation.URL)
+			// Only include text that comes after tool use (skip "I'll search..." preamble)
+			if sawToolUse {
+				responseText.WriteString(variant.Text)
+				// Extract citations from text block
+				for _, citation := range variant.Citations {
+					log.Printf("[AI] Citation type: %s", citation.Type)
+					if webCitation, ok := citation.AsAny().(anthropic.CitationsWebSearchResultLocation); ok {
+						citations = append(citations, webCitation.URL)
+					}
 				}
 			}
 		case anthropic.ServerToolUseBlock:
 			log.Printf("[AI] ServerToolUseBlock: name=%s id=%s", variant.Name, variant.ID)
+			sawToolUse = true
 		case anthropic.WebSearchToolResultBlock:
 			log.Printf("[AI] WebSearchToolResultBlock: tool_use_id=%s", variant.ToolUseID)
 		default:
