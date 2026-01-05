@@ -22,6 +22,8 @@ services:
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=postgres
       - SKIP_DEFAULT_NAMESPACE_CREATION=false
+    ports:
+      - "8080:8080"
     restart: always
 
   worker:
