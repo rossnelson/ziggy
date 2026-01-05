@@ -69,6 +69,7 @@ func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 		return ChatHistoryResponse{
 			Messages:      state.Messages,
 			MysteryStatus: &mysteryStatus,
+			IsTyping:      state.IsTyping,
 		}, nil
 	})
 	if err != nil {
@@ -98,20 +99,27 @@ func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 			state.AddMessage("user", signal.Content, now)
 			logger.Info("User message received", "content", signal.Content)
 
-			// Get Ziggy's current state for personality context
-			ziggyState := queryZiggyState(ctx, input.ZiggyID, logger)
-
 			// Use mystery's track if one is active, otherwise use workflow track
 			responseTrack := track
 			if state.ActiveMystery != nil && state.ActiveMystery.Track != "" {
 				responseTrack = state.ActiveMystery.Track
 			}
 
+			// For educational track, show a "searching" message while we query docs
+			if responseTrack == "educational" {
+				state.AddMessage("ziggy", "Searching the Temporal docs...", workflow.Now(ctx))
+				state.IsTyping = true
+			}
+
+			// Get Ziggy's current state for personality context
+			ziggyState := queryZiggyState(ctx, input.ZiggyID, logger)
+
 			// Generate response via activity
 			response := generateChatResponse(ctx, &state, ziggyState, responseTrack, logger)
 
 			// Add Ziggy's response
 			state.AddMessage("ziggy", response, workflow.Now(ctx))
+			state.IsTyping = false
 			logger.Info("Ziggy response generated", "response", response)
 		})
 

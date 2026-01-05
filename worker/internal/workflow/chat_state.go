@@ -45,8 +45,9 @@ type MysteryStatus struct {
 
 // ChatHistoryResponse is returned by the chat history query
 type ChatHistoryResponse struct {
-	Messages       []ChatMessage  `json:"messages"`
-	MysteryStatus  *MysteryStatus `json:"mysteryStatus,omitempty"`
+	Messages      []ChatMessage  `json:"messages"`
+	MysteryStatus *MysteryStatus `json:"mysteryStatus,omitempty"`
+	IsTyping      bool           `json:"isTyping"`
 }
 
 func NewChatState(owner string) ChatState {

@@ -105,6 +105,7 @@ export async function getConfig(): Promise<void> {
 interface ChatHistoryResponse {
   messages: ChatMessage[];
   mysteryStatus?: MysteryStatus;
+  isTyping?: boolean;
 }
 
 interface SSEEvent {
@@ -128,11 +129,8 @@ export function startSSE() {
         const chatData = parsed.data as ChatHistoryResponse;
         chatMessages.set(chatData.messages ?? []);
         mysteryStatus.set(chatData.mysteryStatus ?? null);
-        // Clear loading when we receive ziggy's response
-        const msgs = chatData.messages ?? [];
-        if (msgs.length > 0 && msgs[msgs.length - 1].role === 'ziggy') {
-          chatLoading.set(false);
-        }
+        // Use isTyping from server state
+        chatLoading.set(chatData.isTyping ?? false);
       }
     } catch (err) {
       console.error('SSE parse error:', err);
