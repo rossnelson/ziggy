@@ -12,6 +12,7 @@ import (
 	"ziggy/internal/workflow"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var workerCmd = &cobra.Command{
@@ -26,9 +27,9 @@ func init() {
 }
 
 func runWorker(cmd *cobra.Command, args []string) error {
-	address, _ := cmd.Flags().GetString("temporal-address")
-	namespace, _ := cmd.Flags().GetString("temporal-namespace")
-	taskQueue, _ := cmd.Flags().GetString("task-queue")
+	address := viper.GetString("temporal-address")
+	namespace := viper.GetString("temporal-namespace")
+	taskQueue := viper.GetString("task-queue")
 
 	fmt.Printf("Starting Ziggy worker...\n")
 	fmt.Printf("  Address: %s\n", address)

@@ -12,6 +12,7 @@ import (
 	"ziggy/internal/workflow"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var serveCmd = &cobra.Command{
@@ -29,10 +30,10 @@ func init() {
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
-	address, _ := cmd.Flags().GetString("temporal-address")
-	namespace, _ := cmd.Flags().GetString("temporal-namespace")
-	taskQueue, _ := cmd.Flags().GetString("task-queue")
-	owner, _ := cmd.Flags().GetString("owner")
+	address := viper.GetString("temporal-address")
+	namespace := viper.GetString("temporal-namespace")
+	taskQueue := viper.GetString("task-queue")
+	owner := viper.GetString("owner")
 	port, _ := cmd.Flags().GetInt("port")
 	timezone, _ := cmd.Flags().GetString("timezone")
 	startWorkflow, _ := cmd.Flags().GetBool("start-workflow")
