@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 import { ziggyState, syncCooldownTimestamp, type ZiggyState } from './store';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 let eventSource: EventSource | null = null;
 
