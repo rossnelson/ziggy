@@ -21,6 +21,7 @@ type ChatState struct {
 	Solved          []string      `json:"solved"`
 	CreatedAt       time.Time     `json:"createdAt"`
 	LastMessageAt   time.Time     `json:"lastMessageAt"`
+	IsTyping        bool          `json:"isTyping"`
 }
 
 type Mystery struct {
