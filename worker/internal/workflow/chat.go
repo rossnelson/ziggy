@@ -105,8 +105,8 @@ func ChatWorkflow(ctx workflow.Context, input ChatInput) error {
 				responseTrack = state.ActiveMystery.Track
 			}
 
-			// For educational track, show a "searching" message while we query docs
-			if responseTrack == "educational" {
+			// For educational track with active topic, show a "searching" message while we query docs
+			if responseTrack == "educational" && state.ActiveMystery != nil {
 				state.AddMessage("ziggy", "Searching the Temporal docs...", workflow.Now(ctx))
 				state.IsTyping = true
 			}
