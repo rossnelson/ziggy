@@ -8,9 +8,7 @@ services:
       - POSTGRES_PASSWORD=temporal
       - POSTGRES_DB=temporal
     volumes:
-      - /mnt/data/postgres:/var/lib/postgresql/data
-    labels:
-      io.balena.features.persistent-storage: '1'
+      - postgres_data:/var/lib/postgresql/data
     restart: always
 
   temporal:
@@ -65,3 +63,5 @@ services:
       - "80:80"
     restart: always
 
+volumes:
+  postgres_data:
