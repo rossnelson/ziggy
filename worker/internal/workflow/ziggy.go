@@ -110,12 +110,21 @@ func ZiggyWorkflow(ctx workflow.Context, input ZiggyInput) error {
 		selector.AddReceive(needMsgCh, func(c workflow.ReceiveChannel, more bool) {
 			var signal UpdateNeedMessageSignal
 			c.Receive(ctx, &signal)
-			// Only update if no recent action (double-check since NeedUpdater also checks)
 			now := workflow.Now(ctx)
-			lastAction := state.GetMostRecentActionTime()
-			if lastAction.IsZero() || now.Sub(lastAction) > NeedMessageDelay {
-				state.Message = signal.Message
-				logger.Info("Updated need message", "message", signal.Message)
+
+			// Update personality if provided (can change even without need message)
+			if signal.Personality != "" {
+				state.Personality = signal.Personality
+				logger.Info("Updated personality from need updater", "personality", signal.Personality)
+			}
+
+			// Only update message if no recent action
+			if signal.Message != "" {
+				lastAction := state.GetMostRecentActionTime()
+				if lastAction.IsZero() || now.Sub(lastAction) > NeedMessageDelay {
+					state.Message = signal.Message
+					logger.Info("Updated need message", "message", signal.Message)
+				}
 			}
 		})
 

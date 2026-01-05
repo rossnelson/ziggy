@@ -21,7 +21,8 @@ type NeedUpdaterInput struct {
 }
 
 type UpdateNeedMessageSignal struct {
-	Message string `json:"message"`
+	Message     string      `json:"message"`
+	Personality Personality `json:"personality,omitempty"`
 }
 
 // NeedUpdaterWorkflow periodically checks Ziggy's state and signals need messages
@@ -58,20 +59,30 @@ func NeedUpdaterWorkflow(ctx workflow.Context, input NeedUpdaterInput) error {
 
 		// Calculate current state with decay
 		current := state.CalculateCurrentState(now)
+
+		// Derive personality based on current care metrics
+		personality := DerivePersonality(state.CareMetrics, current.Bond, now)
+
 		need := current.GetMostUrgentNeed()
+
+		// Always signal if personality changed, even without a need message
+		if personality != state.Personality {
+			signalZiggyUpdate(ctx, input.ZiggyWorkflowID, "", personality, logger)
+		}
 
 		if need == NeedNone {
 			continue
 		}
 
-		// Pick a message from the pool
+		// Pick a message from the pool (use new personality for correct voice)
+		current.Personality = personality
 		message := pickNeedMessage(&current, need)
 		if message == "" {
 			continue
 		}
 
-		// Signal Ziggy to update the message
-		signalZiggyNeedMessage(ctx, input.ZiggyWorkflowID, message, logger)
+		// Signal Ziggy to update the message and personality
+		signalZiggyUpdate(ctx, input.ZiggyWorkflowID, message, personality, logger)
 
 		// Continue-as-new to bound history
 		if iteration >= NeedUpdaterMaxIterations {
@@ -114,8 +125,11 @@ func pickNeedMessage(state *ZiggyState, need NeedType) string {
 	return selector.Pick(string(need))
 }
 
-func signalZiggyNeedMessage(ctx workflow.Context, workflowID string, message string, logger interface{ Info(string, ...interface{}) }) {
-	signal := UpdateNeedMessageSignal{Message: message}
+func signalZiggyUpdate(ctx workflow.Context, workflowID string, message string, personality Personality, logger interface{ Info(string, ...interface{}) }) {
+	signal := UpdateNeedMessageSignal{
+		Message:     message,
+		Personality: personality,
+	}
 
 	err := workflow.SignalExternalWorkflow(ctx, workflowID, "", SignalUpdateNeedMessage, signal).Get(ctx, nil)
 	if err != nil {
