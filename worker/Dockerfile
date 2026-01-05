@@ -10,5 +10,7 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /app/ziggy .
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 EXPOSE 8080
-CMD ["./ziggy", "worker", "--serve"]
+ENTRYPOINT ["./entrypoint.sh"]
