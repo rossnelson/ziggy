@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"ziggy/internal/registry"
-	_ "ziggy/internal/workflow"
+	"ziggy/internal/workflow"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,6 +28,10 @@ func init() {
 }
 
 func runWorker(cmd *cobra.Command, args []string) error {
+	// Register workflows and activities
+	workflow.RegisterWorkflows()
+
+	// Instantiate the Temporal registry
 	reg := registry.Get()
 
 	startWorkflow, _ := cmd.Flags().GetBool("start-workflow")
@@ -37,6 +41,7 @@ func runWorker(cmd *cobra.Command, args []string) error {
 		owner = "dev"
 	}
 
+	// Initialize the Temporal registry
 	err := reg.Initialize(registry.Config{
 		HostPort:      viper.GetString("temporal-address"),
 		Namespace:     viper.GetString("temporal-namespace"),

@@ -1,4 +1,4 @@
-package need_updater
+package pool_regenerator
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"ziggy/internal/registry"
 )
 
-func init() {
+func Register() {
 	registry.RegisterWorkflow(registry.Definition{
-		Name:     "NeedUpdaterWorkflow",
+		Name:     "PoolRegeneratorWorkflow",
 		Workflow: Workflow,
 		IDPattern: func(owner string) string {
-			return fmt.Sprintf("ziggy-needs-%s", owner)
+			return fmt.Sprintf("ziggy-%s-pool-regenerator", owner)
 		},
 		NewInput: func(owner, ziggyID, _ string) any {
-			return Input{ZiggyWorkflowID: ziggyID, Iteration: 0}
+			return Input{ZiggyWorkflowID: ziggyID}
 		},
 		AutoStart: true,
 	})

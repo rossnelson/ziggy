@@ -7,7 +7,7 @@ import (
 	"ziggy/internal/registry"
 )
 
-func init() {
+func Register() {
 	registry.RegisterWorkflow(registry.Definition{
 		Name:     "ChatWorkflow",
 		Workflow: Workflow,
