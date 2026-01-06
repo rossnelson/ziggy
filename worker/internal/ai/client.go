@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -14,16 +15,34 @@ import (
 
 type Client struct {
 	client anthropic.Client
+	init   bool
 }
 
+var (
+	instance     *Client
+	instanceOnce sync.Once
+)
+
+// NewClient returns a lazily-initialized singleton AI client.
+// The actual API connection is deferred until first use.
 func NewClient() *Client {
+	instanceOnce.Do(func() {
+		instance = &Client{}
+	})
+	return instance
+}
+
+func (c *Client) ensureInit() bool {
+	if c.init {
+		return true
+	}
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
-		return nil
+		return false
 	}
-
-	client := anthropic.NewClient(option.WithAPIKey(apiKey))
-	return &Client{client: client}
+	c.client = anthropic.NewClient(option.WithAPIKey(apiKey))
+	c.init = true
+	return true
 }
 
 type PoolGenerationInput struct {
@@ -76,8 +95,8 @@ func (c *Client) GeneratePool(ctx context.Context, input PoolGenerationInput) (*
 	log.Printf("[AI] GeneratePool called: personality=%s stage=%s bond=%s",
 		input.Personality, input.Stage, input.BondDescription)
 
-	if c == nil {
-		log.Printf("[AI] Client is nil - missing ANTHROPIC_API_KEY")
+	if c == nil || !c.ensureInit() {
+		log.Printf("[AI] Client not initialized - missing ANTHROPIC_API_KEY")
 		return nil, fmt.Errorf("AI client not initialized (missing ANTHROPIC_API_KEY)")
 	}
 
@@ -304,7 +323,7 @@ func (c *Client) GenerateChat(ctx context.Context, input ChatInput) (*ChatRespon
 	log.Printf("[AI] GenerateChat called: personality=%s mood=%s track=%s",
 		input.Personality, input.Mood, input.Track)
 
-	if c == nil {
+	if c == nil || !c.ensureInit() {
 		return nil, fmt.Errorf("AI client not initialized")
 	}
 
