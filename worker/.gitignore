@@ -1,6 +1,6 @@
 # Binary
-ziggy
-ziggy-api
+/ziggy
+/ziggy-api
 
 # Air temp directory
 tmp/
