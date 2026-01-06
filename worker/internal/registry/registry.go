@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -185,16 +186,23 @@ func (r *Registry) ensureWorkflowsRunning(ctx context.Context, cfg Config) error
 		return nil
 	}
 
+	// Sort by Weight (lower values first)
+	sortedDefs := make([]Definition, len(defs))
+	copy(sortedDefs, defs)
+	sort.Slice(sortedDefs, func(i, j int) bool {
+		return sortedDefs[i].Weight < sortedDefs[j].Weight
+	})
+
 	// Get the primary workflow ID (Ziggy) for dependent workflows
 	var ziggyID string
-	for _, def := range defs {
+	for _, def := range sortedDefs {
 		if def.Name == "ZiggyWorkflow" && def.IDPattern != nil {
 			ziggyID = def.IDPattern(cfg.Owner)
 			break
 		}
 	}
 
-	for _, def := range defs {
+	for _, def := range sortedDefs {
 		if !def.AutoStart {
 			continue
 		}

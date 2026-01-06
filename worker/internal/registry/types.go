@@ -7,6 +7,7 @@ type Definition struct {
 	IDPattern func(owner string) string
 	NewInput  func(owner, ziggyID, tz string) any
 	AutoStart bool
+	Weight    int // Lower values start first (default 0)
 }
 
 // ActivityDef describes an activity for self-registration.

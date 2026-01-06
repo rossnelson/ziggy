@@ -11,7 +11,7 @@ func init() {
 		Name:     "PoolRegeneratorWorkflow",
 		Workflow: Workflow,
 		IDPattern: func(owner string) string {
-			return fmt.Sprintf("ziggy-pool-%s", owner)
+			return fmt.Sprintf("ziggy-%s-pool-regenerator", owner)
 		},
 		NewInput: func(owner, ziggyID, _ string) any {
 			return Input{ZiggyWorkflowID: ziggyID}
