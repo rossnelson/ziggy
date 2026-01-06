@@ -193,11 +193,11 @@ func (r *Registry) ensureWorkflowsRunning(ctx context.Context, cfg Config) error
 		return sortedDefs[i].Weight < sortedDefs[j].Weight
 	})
 
-	// Get the primary workflow ID (Ziggy) for dependent workflows
-	var ziggyID string
+	// Get the primary workflow ID for dependent workflows
+	var primaryID string
 	for _, def := range sortedDefs {
-		if def.Name == "ZiggyWorkflow" && def.IDPattern != nil {
-			ziggyID = def.IDPattern(cfg.Owner)
+		if def.Primary && def.IDPattern != nil {
+			primaryID = def.IDPattern(cfg.Owner)
 			break
 		}
 	}
@@ -213,7 +213,7 @@ func (r *Registry) ensureWorkflowsRunning(ctx context.Context, cfg Config) error
 		id := def.IDPattern(cfg.Owner)
 		var input interface{}
 		if def.NewInput != nil {
-			input = def.NewInput(cfg.Owner, ziggyID, cfg.Timezone)
+			input = def.NewInput(cfg.Owner, primaryID, cfg.Timezone)
 		}
 
 		if err := r.ensureWorkflow(ctx, id, def.Name, input); err != nil {
