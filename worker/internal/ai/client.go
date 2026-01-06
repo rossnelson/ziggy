@@ -212,6 +212,7 @@ Rules:
 - Match the %s personality voice consistently
 - Reference tardigrade facts occasionally (survive space, radiation, extreme temps, etc.)
 - Each message should be max 3 lines, each line ~20 characters
+- Avoid phrases that could sound inappropriate out of context (e.g. "gentle petting")
 - Use \n for line breaks within messages
 - Keep messages appropriate for the context
 
