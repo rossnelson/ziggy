@@ -28,7 +28,7 @@ func init() {
 }
 
 func runWorker(cmd *cobra.Command, args []string) error {
-	reg := registry.NewRegistry()
+	reg := registry.Get()
 
 	startWorkflow, _ := cmd.Flags().GetBool("start-workflow")
 	timezone, _ := cmd.Flags().GetString("timezone")
