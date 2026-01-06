@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"ziggy/internal/api"
-	"ziggy/internal/temporal"
+	"ziggy/internal/registry"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,8 +46,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Port: %d\n", port)
 
 	// Initialize the Temporal registry
-	registry := temporal.Get()
-	err := registry.Initialize(temporal.Config{
+	reg := registry.Get()
+	err := reg.Initialize(registry.Config{
 		HostPort:  address,
 		Namespace: namespace,
 		TaskQueue: taskQueue,
@@ -55,7 +55,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize temporal: %w", err)
 	}
-	defer registry.Shutdown()
+	defer reg.Cleanup()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -70,6 +70,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Start the API server
-	server := api.NewServer(registry, workflowID, chatWorkflowID, port)
+	server := api.NewServer(reg, workflowID, chatWorkflowID, port)
 	return server.Start(ctx)
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"ziggy/internal/workflow"
+	"ziggy/internal/workflow/chat"
 )
 
 func (s *Server) handleGetChatHistory(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +13,7 @@ func (s *Server) handleGetChatHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.registry.QueryWorkflow(r.Context(), s.chatWorkflowID, workflow.QueryChatHistory)
+	result, err := s.reg.QueryWorkflow(r.Context(), s.chatWorkflowID, chat.QueryChatHistory)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -44,8 +44,8 @@ func (s *Server) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signal := workflow.SendMessageSignal{Content: req.Content}
-	err := s.registry.SignalWorkflow(r.Context(), s.chatWorkflowID, workflow.SignalSendMessage, signal)
+	signal := chat.SendMessageSignal{Content: req.Content}
+	err := s.reg.SignalWorkflow(r.Context(), s.chatWorkflowID, chat.SignalSendMessage, signal)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -54,7 +54,7 @@ func (s *Server) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	// Give workflow time to process and generate response
 	// In production, would use a more robust approach like polling or websockets
 
-	result, err := s.registry.QueryWorkflow(r.Context(), s.chatWorkflowID, workflow.QueryChatHistory)
+	result, err := s.reg.QueryWorkflow(r.Context(), s.chatWorkflowID, chat.QueryChatHistory)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -72,7 +72,7 @@ func (s *Server) handleGetMysteryStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := s.registry.QueryWorkflow(r.Context(), s.chatWorkflowID, workflow.QueryMysteryStatus)
+	result, err := s.reg.QueryWorkflow(r.Context(), s.chatWorkflowID, chat.QueryMysteryStatus)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -99,11 +99,11 @@ func (s *Server) handleStartMystery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signal := workflow.StartMysterySignal{
+	signal := chat.StartMysterySignal{
 		MysteryID: req.MysteryID,
 		Track:     req.Track,
 	}
-	err := s.registry.SignalWorkflow(r.Context(), s.chatWorkflowID, workflow.SignalStartMystery, signal)
+	err := s.reg.SignalWorkflow(r.Context(), s.chatWorkflowID, chat.SignalStartMystery, signal)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -123,16 +123,16 @@ func (s *Server) handleGetMysteries(w http.ResponseWriter, r *http.Request) {
 	// Get solved mysteries from chat workflow if available
 	var solved []string
 	if s.chatWorkflowID != "" {
-		result, err := s.registry.QueryWorkflow(r.Context(), s.chatWorkflowID, workflow.QueryMysteryStatus)
+		result, err := s.reg.QueryWorkflow(r.Context(), s.chatWorkflowID, chat.QueryMysteryStatus)
 		if err == nil {
-			if status, ok := result.(workflow.MysteryStatus); ok {
+			if status, ok := result.(chat.MysteryStatus); ok {
 				// Would need to track solved mysteries in state
 				_ = status
 			}
 		}
 	}
 
-	mysteries := workflow.GetAvailableMysteries(track, solved)
+	mysteries := chat.GetAvailableMysteries(track, solved)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"data":    mysteries,

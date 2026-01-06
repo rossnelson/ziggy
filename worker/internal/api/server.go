@@ -8,20 +8,21 @@ import (
 	"os"
 	"time"
 
-	"ziggy/internal/temporal"
-	"ziggy/internal/workflow"
+	"ziggy/internal/registry"
+	z "ziggy/internal/ziggy"
+	ziggyworkflow "ziggy/internal/workflow/ziggy"
 )
 
 type Server struct {
-	registry       *temporal.Registry
+	reg            *registry.Registry
 	workflowID     string
 	chatWorkflowID string
 	port           int
 }
 
-func NewServer(registry *temporal.Registry, workflowID string, chatWorkflowID string, port int) *Server {
+func NewServer(reg *registry.Registry, workflowID string, chatWorkflowID string, port int) *Server {
 	return &Server{
-		registry:       registry,
+		reg:            reg,
 		workflowID:     workflowID,
 		chatWorkflowID: chatWorkflowID,
 		port:           port,
@@ -82,7 +83,7 @@ func (s *Server) handleGetState(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFeed(w http.ResponseWriter, r *http.Request) {
-	err := s.registry.SignalWorkflow(r.Context(), s.workflowID, workflow.SignalFeed, struct{}{})
+	err := s.reg.SignalWorkflow(r.Context(), s.workflowID, ziggyworkflow.SignalFeed, struct{}{})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -96,7 +97,7 @@ func (s *Server) handleFeed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
-	err := s.registry.SignalWorkflow(r.Context(), s.workflowID, workflow.SignalPlay, struct{}{})
+	err := s.reg.SignalWorkflow(r.Context(), s.workflowID, ziggyworkflow.SignalPlay, struct{}{})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -110,7 +111,7 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePet(w http.ResponseWriter, r *http.Request) {
-	err := s.registry.SignalWorkflow(r.Context(), s.workflowID, workflow.SignalPet, struct{}{})
+	err := s.reg.SignalWorkflow(r.Context(), s.workflowID, ziggyworkflow.SignalPet, struct{}{})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -124,7 +125,7 @@ func (s *Server) handlePet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleWake(w http.ResponseWriter, r *http.Request) {
-	err := s.registry.SignalWorkflow(r.Context(), s.workflowID, workflow.SignalWake, struct{}{})
+	err := s.reg.SignalWorkflow(r.Context(), s.workflowID, ziggyworkflow.SignalWake, struct{}{})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -150,8 +151,8 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) queryState(ctx context.Context) (*workflow.ZiggyStateResponse, error) {
-	result, err := s.registry.QueryWorkflow(ctx, s.workflowID, workflow.QueryState)
+func (s *Server) queryState(ctx context.Context) (*z.StateResponse, error) {
+	result, err := s.reg.QueryWorkflow(ctx, s.workflowID, ziggyworkflow.QueryState)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func (s *Server) queryState(ctx context.Context) (*workflow.ZiggyStateResponse, 
 		return nil, err
 	}
 
-	var state workflow.ZiggyState
+	var state z.State
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, err
 	}

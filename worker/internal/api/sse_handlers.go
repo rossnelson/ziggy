@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"ziggy/internal/workflow"
+	"ziggy/internal/workflow/chat"
 )
 
 type SSEEvent struct {
@@ -79,7 +79,7 @@ func (s *Server) sendChatUpdate(w http.ResponseWriter, flusher http.Flusher, las
 		return
 	}
 
-	result, err := s.registry.QueryWorkflow(context.Background(), s.chatWorkflowID, workflow.QueryChatHistory)
+	result, err := s.reg.QueryWorkflow(context.Background(), s.chatWorkflowID, chat.QueryChatHistory)
 	if err != nil {
 		return
 	}

@@ -1,4 +1,4 @@
-package workflow
+package chat
 
 var educationalMysteries = []Mystery{
 	{
@@ -136,7 +136,6 @@ func GetRandomMystery(track string) *Mystery {
 		return nil
 	}
 
-	// Return first mystery for now (could randomize later)
 	return &mysteries[0]
 }
 

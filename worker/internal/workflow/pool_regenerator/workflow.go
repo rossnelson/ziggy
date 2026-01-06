@@ -1,27 +1,42 @@
-package workflow
+package pool_regenerator
 
 import (
 	"time"
 
 	"go.temporal.io/sdk/workflow"
+
+	z "ziggy/internal/ziggy"
 )
 
 const (
 	SignalPoolResult     = "pool_result"
 	SignalPoolRegenerate = "pool_regenerate"
+
+	RegenerationInterval = 6 * time.Hour
 )
 
-type PoolRegeneratorInput struct {
+type Input struct {
 	ZiggyWorkflowID string `json:"ziggyWorkflowId"`
 }
 
-type PoolRegenerateSignal struct {
-	Personality Personality `json:"personality"`
-	Stage       Stage       `json:"stage"`
-	Bond        float64     `json:"bond"`
+type RegenerateSignal struct {
+	Personality z.Personality `json:"personality"`
+	Stage       z.Stage       `json:"stage"`
+	Bond        float64       `json:"bond"`
 }
 
-func PoolRegeneratorWorkflow(ctx workflow.Context, input PoolRegeneratorInput) error {
+type RegenerationInput struct {
+	Personality z.Personality `json:"personality"`
+	Stage       z.Stage       `json:"stage"`
+	Bond        float64       `json:"bond"`
+}
+
+type RegenerationOutput struct {
+	Pool        *z.MessagePool `json:"pool"`
+	GeneratedAt time.Time      `json:"generatedAt"`
+}
+
+func Workflow(ctx workflow.Context, input Input) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Pool regenerator started", "ziggyWorkflowId", input.ZiggyWorkflowID)
 
@@ -30,51 +45,47 @@ func PoolRegeneratorWorkflow(ctx workflow.Context, input PoolRegeneratorInput) e
 	})
 
 	regenerateCh := workflow.GetSignalChannel(ctx, SignalPoolRegenerate)
-	timer := workflow.NewTimer(ctx, PoolRegenerationInterval)
+	timer := workflow.NewTimer(ctx, RegenerationInterval)
 
 	for {
 		selector := workflow.NewSelector(ctx)
 
-		// Handle regenerate signal from Ziggy
 		selector.AddReceive(regenerateCh, func(c workflow.ReceiveChannel, more bool) {
-			var signal PoolRegenerateSignal
+			var signal RegenerateSignal
 			c.Receive(ctx, &signal)
 			logger.Info("Received regenerate signal", "personality", signal.Personality, "stage", signal.Stage)
 			regenerateAndSignal(ctx, actCtx, input.ZiggyWorkflowID, signal, logger)
 		})
 
-		// Handle scheduled regeneration timer
 		selector.AddFuture(timer, func(f workflow.Future) {
 			logger.Info("Scheduled regeneration timer fired")
-			// Query Ziggy for current state
-			var state ZiggyState
+			var state z.State
 			err := workflow.ExecuteActivity(actCtx, "QueryZiggyState", input.ZiggyWorkflowID).Get(ctx, &state)
 			if err != nil {
 				logger.Info("Failed to query Ziggy state for scheduled regen", "error", err.Error())
 			} else {
-				signal := PoolRegenerateSignal{
+				signal := RegenerateSignal{
 					Personality: state.Personality,
 					Stage:       state.Stage,
 					Bond:        state.Bond,
 				}
 				regenerateAndSignal(ctx, actCtx, input.ZiggyWorkflowID, signal, logger)
 			}
-			timer = workflow.NewTimer(ctx, PoolRegenerationInterval)
+			timer = workflow.NewTimer(ctx, RegenerationInterval)
 		})
 
 		selector.Select(ctx)
 
-		// Continue-as-new to prevent history growth
 		if workflow.GetInfo(ctx).GetCurrentHistoryLength() > 5000 {
 			logger.Info("Pool regenerator continuing as new")
-			return workflow.NewContinueAsNewError(ctx, PoolRegeneratorWorkflow, input)
+			return workflow.NewContinueAsNewError(ctx, Workflow, input)
 		}
 	}
 }
 
-func regenerateAndSignal(ctx, actCtx workflow.Context, ziggyWorkflowID string, signal PoolRegenerateSignal, logger interface{ Info(string, ...interface{}) }) {
-	var output PoolRegenerationOutput
-	err := workflow.ExecuteActivity(actCtx, "RegeneratePool", PoolRegenerationInput{
+func regenerateAndSignal(ctx, actCtx workflow.Context, ziggyWorkflowID string, signal RegenerateSignal, logger interface{ Info(string, ...interface{}) }) {
+	var output RegenerationOutput
+	err := workflow.ExecuteActivity(actCtx, "RegeneratePool", RegenerationInput{
 		Personality: signal.Personality,
 		Stage:       signal.Stage,
 		Bond:        signal.Bond,
