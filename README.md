@@ -2,12 +2,7 @@
 
 A virtual pet tardigrade powered by Temporal workflows.
 
-```
-    ___
-   (o o)    *wiggle*
-   ( : )    I've survived worse.
-    \_/     But barely.
-```
+![Ziggy Screenshot](assets/splash.png)
 
 ## Overview
 
