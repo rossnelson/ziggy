@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"ziggy/internal/ai"
-	z "ziggy/internal/pet"
+	z "ziggy/internal/ziggy"
 )
 
 type Activities struct {

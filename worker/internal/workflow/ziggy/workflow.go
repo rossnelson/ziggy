@@ -6,7 +6,7 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
-	z "ziggy/internal/pet"
+	z "ziggy/internal/ziggy"
 )
 
 const (
